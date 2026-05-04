@@ -244,20 +244,19 @@ Claude представляет **2–3 опции** до финализации
 
 ## Установка
 
-### Как Claude Code skill
+### Через skills.sh
 
 ```bash
-# Из директории проекта
-claude install-skill https://github.com/wudpeker/consulting-problem-solving-ru
+npx skills add sfrangulov/skills --skill consulting-problem-solving-ru
 ```
 
 ### Ручная установка
 
-Клонируй в директорию скилов Claude Code:
+Клонируй репозиторий и скопируй папку скила в директорию скилов Claude Code:
 
 ```bash
-git clone https://github.com/wudpeker/consulting-problem-solving-ru.git \
-  ~/.claude/skills/consulting-problem-solving-ru
+git clone https://github.com/sfrangulov/skills.git
+cp -r skills/consulting-problem-solving-ru ~/.claude/skills/
 ```
 
 ---

@@ -244,20 +244,19 @@ After all gates pass, the approved content is handed off to a downstream builder
 
 ## Installation
 
-### As a Claude Code Skill
+### Via skills.sh
 
 ```bash
-# From your project directory
-claude install-skill https://github.com/wudpeker/consulting-problem-solving
+npx skills add sfrangulov/skills --skill consulting-problem-solving
 ```
 
 ### Manual Installation
 
-Clone into your Claude Code skills directory:
+Clone the repo and copy the skill folder into your Claude Code skills directory:
 
 ```bash
-git clone https://github.com/wudpeker/consulting-problem-solving.git \
-  ~/.claude/skills/consulting-problem-solving
+git clone https://github.com/sfrangulov/skills.git
+cp -r skills/consulting-problem-solving ~/.claude/skills/
 ```
 
 ---
