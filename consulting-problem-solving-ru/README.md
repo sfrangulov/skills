@@ -358,6 +358,15 @@ consulting-problem-solving-ru/
 
 ---
 
+## Благодарности
+
+Скил берёт идеи из публичных MIT-проектов:
+
+- **[fleurytian/awesome-claude-skills](https://github.com/fleurytian/awesome-claude-skills)** — концепция dummy approval gate для крупных проектов (упомянута в шаге 4).
+- **[aznatkoiny/zai-skills](https://github.com/aznatkoiny/zai-skills)** — чек-лист самопроверки дерева, расширенный формат брифа сабагенту, SCR-шаблон для exec summary.
+- **[abdullah4ai/mckinsey-research](https://github.com/abdullah4ai/mckinsey-research)** — структура market-research deliverables как вдохновение для шага 5.
+- **[kgraph57/mckinsey-style-visualization-skill](https://github.com/kgraph57/mckinsey-style-visualization-skill)** — карта «тип сообщения → форма представления» в шаге 8.
+
 ## Лицензия
 
 MIT
