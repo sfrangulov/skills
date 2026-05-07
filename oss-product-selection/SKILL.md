@@ -2,6 +2,10 @@
 name: oss-product-selection
 description: |
   Picks the next open-source product to ship when the goal is personal brand growth, not revenue. Trigger whenever the user is deciding which OSS tool, npm CLI, dev utility, or side project to build next — including phrases like "what should I open-source next", "picking my next product", "OSS portfolio strategy", "expanding my portfolio", "choose my next side project for brand", "help me decide between tool ideas", "is this a good idea to ship", "viral dev tool ideation", "indie hacker product selection", or when they describe an existing portfolio and ask what to add. Trigger even when the user does not say "OSS" — any time they weigh multiple build ideas for brand, audience, or career reasons qualifies. Runs 7 phases with hard gates — constraints, asset inventory, broad ideation, competitive/platform/pain/hype scans, two-axis brand-vs-product scoring, naming, reality check and spec. Prevents premature ideation, skipped competitive research, naming collisions, and the platform shipping a native equivalent.
+license: MIT
+metadata:
+  author: sfrangulov
+  version: "1.0.0"
 ---
 
 # OSS Product Selection
