@@ -4,9 +4,18 @@ description: End-to-end automated pipeline for recording polished 30-90s demo vi
 license: MIT
 metadata:
   author: sfrangulov
-  version: "1.1.0"
+  version: "1.1.1"
   tags: video, demo, recording, playwright, remotion, elevenlabs, screencast, presentation, react
 ---
+
+## Companion skills — load these BEFORE you start
+
+Two other skills carry the deep API knowledge for the tools in this pipeline. Without them, you will spin on basics this skill does not repeat. **As soon as this skill triggers, invoke the Skill tool for both of these:**
+
+- `remotion-video-creation` — 29 rules covering Remotion's API: animations, audio, captions, transitions, the `interpolate` / `spring` patterns, gotchas around `<Video>` / `<OffthreadVideo>`. Load it before touching anything in `src/` (phase 4).
+- `playwright-best-practices` — covers the locator strategy, auto-waiting, network mocking, debugging flaky tests, and CI patterns. Load it before writing `scripts/record-demo.ts` (phase 3) — the SPA waiting / `waitForFunction` patterns in rules/03 are a thin slice of what this skill knows.
+
+Skipping this is the #1 way to lose an hour rediscovering things. Real example: forgetting `remotion-video-creation` led to using CSS animations inside Remotion (silently produces a frozen frame in the rendered mp4 — Remotion only honours `useCurrentFrame()`-driven animation).
 
 ## When to use
 
@@ -47,6 +56,9 @@ Read the rule files in phase order — each phase produces one artifact:
 ## Quick start (TL;DR)
 
 ```bash
+# 0. Load companion skills first (Skill tool):
+#      remotion-video-creation, playwright-best-practices
+
 # 1. Add the zoom hook to your HTML/app (see rules/02)
 
 # 2. Bootstrap recorder + remotion project
@@ -115,7 +127,6 @@ The [templates/](templates/) directory contains drop-in files:
 
 ## See also
 
-- `remotion-video-creation` skill — detailed Remotion API rules (29 rules)
-- `playwright-best-practices` skill — Playwright best practices
+- `remotion-video-creation` and `playwright-best-practices` — load both at the start of the session, not as references (see "Companion skills" at the top)
 - ElevenLabs API: https://docs.elevenlabs.io/api-reference/text-to-speech
 - VHS (terminal recording alternative): https://github.com/charmbracelet/vhs

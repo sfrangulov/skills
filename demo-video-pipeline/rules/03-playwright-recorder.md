@@ -5,6 +5,10 @@ description: Headless recording via Playwright — keyboard scenes, webm → mp4
 
 # Playwright recorder
 
+## ⚠️ Load `playwright-best-practices` first
+
+Before writing any code in this phase, invoke the Skill tool to load `playwright-best-practices`. This rule file covers the recording-specific patterns; that skill covers the rest of Playwright (locators, auto-waiting strategy, network mocking, debugging, CI). The two are complementary — skip the load and you will reinvent things badly.
+
 ## What it does
 
 A headless Chromium opens the HTML/URL, waits for mount, presses keys in sequence with delays, writes a webm, and converts it to mp4 via ffmpeg.

@@ -5,11 +5,13 @@ description: Remotion overlay project — intro/outro, callouts, count-up number
 
 # Remotion overlay project
 
+## ⚠️ Load `remotion-video-creation` first
+
+Before writing any code in this phase, invoke the Skill tool to load `remotion-video-creation`. It carries 29 rules on Remotion's API — animations, audio, captions, transitions, the `interpolate` / `spring` patterns, gotchas around `<Video>` / `<OffthreadVideo>`, `staticFile`, font loading, and rendering. This rule file does not repeat any of that; it shows the *project shape* for a demo-overlay setup. Without `remotion-video-creation` loaded you will end up using CSS animations (silently dead in Remotion), miss `premountFor`, mis-time springs, and generally fight the framework.
+
 ## What it is
 
 Remotion is a React framework for rendering video. You write components like normal React and render to mp4. The idea here: layer overlay graphics on top of the mp4 captured by Playwright.
-
-**Related skill:** `remotion-video-creation` (29 detailed rules) — load it when you're working on the Remotion code.
 
 ## Project layout
 
