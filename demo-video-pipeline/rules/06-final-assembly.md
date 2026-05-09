@@ -185,7 +185,12 @@ Parameters to reduce size:
 
 You generated the voiceover, opened it in Audacity, and it's 2:12 instead of the planned 1:50. Three options, in order of preference:
 
-1. **Trim natural pauses in the voice mp3 first.** Eleven Multilingual adds 200–400 ms between sentences by default. Half of those are dramatic and worth keeping; half are filler. Audacity → Truncate Silence (threshold −40 dB, 200 ms minimum, truncate to 80 ms) routinely reclaims 5–10 seconds without sounding rushed.
+1. **Trim silence in the voice mp3 first.** TTS engines pad sentences with 200–500 ms of silence; leading/trailing silence is also routinely 300–600 ms. The official `remotion-best-practices` skill ships a `silence-detection.md` rule that uses `loudnorm` to get an **adaptive** threshold per file (much better than a hardcoded −40 dB), then enumerates silences with `ffmpeg -af silencedetect`. Read it before writing the trim commands; voices vary too much in baseline level for a fixed threshold to work consistently.
+
+   Two distinct sub-cases:
+   - **Leading + trailing silence.** Trivial — drop everything before the first non-silence and after the last. Use the timestamps from `silencedetect` directly. Reclaims 0.5–1.0 s with zero risk of changing pacing.
+   - **Interior pauses.** Trickier — between-sentence silences are partly dramatic, partly filler. Cap each silence at 250 ms (long silences shorten, short silences stay) instead of removing them; that preserves cadence while reclaiming time. Build the splice script on demand using `silence-detection.md` as the reference.
+
 2. **Tighten the script and re-generate.** Drop adjectives, merge two short sentences. ElevenLabs costs are trivial compared to your time.
 3. **Slow the video to match.** Only after (1) and (2) — and only if the residual ratio is **≤1.25×**. Past that, animations look molasses, scrolls feel laggy.
 

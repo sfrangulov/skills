@@ -4,7 +4,7 @@ description: End-to-end automated pipeline for recording polished 30-90s demo vi
 license: MIT
 metadata:
   author: sfrangulov
-  version: "1.4.0"
+  version: "1.4.1"
   tags: video, demo, recording, playwright, remotion, elevenlabs, screencast, presentation, react
 ---
 
