@@ -30,13 +30,13 @@ The key artifact is `voiceover/script.md`. It binds scene timings to text.
 
 | Segment | Scene | Time | Duration | Text |
 |---|---|---|---|---|
-| 1 | intro | 0:00–0:08 | 8s | AIDA Analytics — the national transport platform of Kazakhstan. |
-| 2 | kpi | 0:08–0:14 | 6s | Network load: 95.2%. Critical threshold. No spare capacity. |
-| 3 | alert | 0:14–0:22 | 8s | The system detects overload risk on the TMTM corridor six months ahead. |
-| 4 | scenario | 0:22–0:36 | 14s | At 40% traffic growth, load hits 105%. 30% transit loss. Cascade onto adjacent nodes. |
+| 1 | intro | 0:00–0:08 | 8s | Acme Analytics — the operating system for your fleet. Real-time visibility, predictive alerts, one workspace. |
+| 2 | kpi | 0:08–0:14 | 6s | Network load: ninety-five point two percent. Critical threshold. No spare capacity. |
+| 3 | alert | 0:14–0:22 | 8s | The system flags an overload risk on the central corridor six months ahead. |
+| 4 | scenario | 0:22–0:36 | 14s | At forty percent traffic growth, load hits one hundred and five percent. Thirty percent of transit lost. Cascade onto adjacent nodes. |
 | 5 | cascade | 0:36–0:48 | 12s | The model proposes three measures: capacity expansion, flow redistribution, tariff regulation. |
 | 6 | diagnostic | 0:48–0:58 | 10s | Of five projects in the investment program, three rank as high priority. Three more nodes fall outside the plan. |
-| 7 | outro | 0:58–1:00 | 2s | AIDA — answers for the whole network. Minutes, not months. |
+| 7 | outro | 0:58–1:00 | 2s | Acme — answers for the whole network. Minutes, not months. |
 ```
 
 ## Pacing depends on language — calibrate, don't assume
@@ -94,7 +94,7 @@ const client = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_API_KEY });
 
 const voiceId = "21m00Tcm4TlvDq8ikWAM"; // Rachel; for non-English, pick a multilingual voice
 const text = `
-AIDA Analytics — the national transport platform of Kazakhstan.
+Acme Analytics — the operating system for your fleet.
 Network load: ninety-five point two percent. Critical threshold.
 ...
 `;
@@ -196,6 +196,6 @@ Eleven Multilingual v2 already adds natural pauses. To force one explicitly use 
 Eleven Turbo / Multilingual support these via **prompt prefix**:
 ```
 [Whispering] Listen. Something is wrong with the system.
-[Confidently] AIDA — the national transport platform.
+[Confidently] Acme — answers for the whole network.
 ```
 Doesn't always land — iterate.

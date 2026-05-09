@@ -8,7 +8,7 @@ description: Pipeline overview, inputs, prerequisites, output artifact
 ## Inputs
 
 One of:
-1. **Standalone HTML** with React + Babel inline (e.g. `transport-analytics_demo_v2_presentation.html`) — fastest path, no build step required. You own the source, so you can drop the `useZoomScenes` hook in directly and drive the recording with keyboard scenes.
+1. **Standalone HTML** with React + Babel inline (e.g. `product-demo.html`) — fastest path, no build step required. You own the source, so you can drop the `useZoomScenes` hook in directly and drive the recording with keyboard scenes.
 2. **Live web app you control** (Next.js / Vite / etc.) — run it locally or point at a prod URL. Same path as (1) if you can ship a one-line script tag with the hook.
 3. **Static React build** in `dist/`, openable via `file://` — same as (1).
 4. **Live URL you can NOT modify** (staging, third-party, prod-without-deploy-window) — you can't inject a hook. Record raw with Playwright clicks/scrolls, then add **digital zoom in Remotion** by wrapping `<OffthreadVideo>` in a transformed div. Quality is fine up to ~2.5× on a 1920p source. See rules/04 (`Live-URL digital zoom` section).
@@ -52,7 +52,7 @@ API keys (optional):
 
 ```
 <project>/
-├── transport-analytics_demo.html  (phase 1: source)
+├── product-demo.html              (phase 1: source)
 └── video/demo-v1/                 (phases 2–5)
     ├── public/
     │   └── recording.mp4          (phase 3 output)

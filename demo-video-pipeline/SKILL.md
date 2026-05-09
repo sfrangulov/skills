@@ -4,7 +4,7 @@ description: End-to-end automated pipeline for recording polished 30-90s demo vi
 license: MIT
 metadata:
   author: sfrangulov
-  version: "1.2.0"
+  version: "1.3.0"
   tags: video, demo, recording, playwright, remotion, elevenlabs, screencast, presentation, react
 ---
 
@@ -16,6 +16,53 @@ Two other skills carry the deep API knowledge for the tools in this pipeline. Wi
 - `playwright-best-practices` — covers the locator strategy, auto-waiting, network mocking, debugging flaky tests, and CI patterns. Load it before writing `scripts/record-demo.ts` (phase 3) — the SPA waiting / `waitForFunction` patterns in rules/03 are a thin slice of what this skill knows.
 
 Skipping this is the #1 way to lose an hour rediscovering things. Real example: forgetting `remotion-video-creation` led to using CSS animations inside Remotion (silently produces a frozen frame in the rendered mp4 — Remotion only honours `useCurrentFrame()`-driven animation).
+
+## Step 0 — Intake (run BEFORE anything else)
+
+Before reading any other rule, before installing dependencies, before writing scenes — collect these answers from the user. They fork the pipeline at every level and are 10× cheaper to gather upfront than to retrofit mid-flight. Use the `AskUserQuestion` tool where options are bounded; use a plain prompt where the answer is open-ended.
+
+**Q1 — Source (open prompt).**
+> "Where are we recording from? Give me a file path, URL, or path to a project I should run."
+>
+> Examples: `/Users/me/projects/myapp/demo.html` (local HTML), `http://localhost:3000/dashboard` (your dev server), `https://staging.acme.com/fleet` (live staging), `~/work/myrepo` (with the dev-server command).
+>
+> Infer from the answer: `file://` or `*.html` → standalone HTML, hook injectable. `localhost:*` → live local app, usually injectable. External URL → live external, usually NOT injectable. Only ask the explicit follow-up "can you modify the source to inject a keyboard zoom hook?" if the answer doesn't make this clear.
+
+**Q2 — Target platform (`AskUserQuestion`, 4 options).**
+> "Where will this video live?"
+- `LinkedIn / YouTube / web embed` — horizontal 16:9 (1920×1080), 30–90s, −14 LUFS
+- `LinkedIn mobile feed` — square 1:1 (1080×1080), ≤30s ideal
+- `Reels / TikTok / YouTube Shorts` — vertical 9:16 (1080×1920), ≤90s
+- `Internal review / sales meeting` — any aspect, length not capped, audio less critical
+
+**Q3 — Voiceover language (`AskUserQuestion`, 4 options).**
+> "Voiceover language? This sets the per-second word budget — Russian needs ~25% fewer words than English to fit the same duration."
+- `English` — 2.5 wps budget
+- `Russian` — 2.0 wps budget
+- `Other` — ask which next; pacing varies (see rules/05)
+- `No voiceover` — music + overlays only
+
+**Q4 — Ambition (`AskUserQuestion`, 3 options).**
+> "Polish level? Bigger is more time."
+- `Quick screencast` — raw recording with cinematic zooms, no overlays, no voice (~10 min total)
+- `Polished marketing reel` — overlays, count-ups, music, no voiceover (~1.5 hours)
+- `Full presidential demo` — overlays + voiceover + music with ducking + LUFS-normalized (~2.5 hours)
+
+**Q5 — Story (three open prompts in sequence).**
+> 5a. "In one sentence — what is this product / page / view, for someone who's never seen it?"
+> 5b. "List the 3–5 key moments that need to land in the video. Describe them as a viewer would experience them, not as screenshots."
+> 5c. "What should the viewer feel or remember by the last second? One line."
+
+Without 5b you'll be writing SCENES blind. Don't skip it because the user said "just record a demo" — push back and get the moments before going further.
+
+## Quality gates — do not skip
+
+After each phase, check before going to the next. These prevent the most expensive mistake in the pipeline: finishing a phase whose output is unusable and rebuilding everything downstream.
+
+- **G1 — after recording (phase 3).** Open `public/recording.mp4` and step through each scene. Does it show the actual content you wanted (data loaded, modal opened, animation finished, table populated), or loading skeletons / spinners / empty states / placeholder text? If anything is unsettled → strengthen the wait condition for that scene in `rules/03` ("Waiting on real SPAs") and re-record. Going to phase 4 with skeleton frames means rebuilding overlays after the second take.
+- **G2 — after overlays (phase 4).** Scrub the timeline in `pnpm dev`. For every overlay, ask: is it on the real DOM element it refers to, or floating in empty space / over moving content? Do chip values match what the UI shows in that frame? If anything is off → check `markers.json` anchors and `startDelay` (`rules/04` → "Sync overlays to in-scene actions").
+- **G3 — after voiceover mix (phase 5).** `ffprobe` audio vs video duration. Within ±10%? If not → pause-trim the audio first, then `setpts` as a last resort (`rules/06`).
+- **G4 — before delivery.** Run the "Before you ship the video" checklist (frame sweep, duration sanity, mobile playback, LUFS).
 
 ## When to use
 

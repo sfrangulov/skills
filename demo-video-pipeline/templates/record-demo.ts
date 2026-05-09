@@ -113,14 +113,15 @@ async function wheelScrollSpa(
 }
 
 /* ─────────────────────────────────────────────────────────────
- * waitForKpi — robust wait for SPA-style data fetches.
+ * waitForContent — robust wait for SPA-style content (data fetches, modals,
+ * animations, anything that needs to settle before you start a scene).
  * - waitUntil: "commit" because networkidle never fires on socket apps
  * - waitForFunction with explicit (fn, null, { timeout }) — the second
  *   positional is the predicate's input, not options. The 30s default
  *   bites silently.
  * - Anchor on a real value substring, not on a heading.
  * ───────────────────────────────────────────────────────────── */
-async function waitForKpi(
+async function waitForContent(
   page: Page,
   pattern: RegExp,
   timeoutMs = 90_000,
@@ -188,7 +189,7 @@ async function main() {
   });
 
   // For static demo HTML, "networkidle" works fine. For real SPAs use
-  // "commit" + an explicit waitForKpi() on a value substring.
+  // "commit" + an explicit waitForContent() on a value substring.
   const isLocalHtml = DEMO_TARGET.startsWith("file://");
   await page.goto(DEMO_TARGET, {
     waitUntil: isLocalHtml ? "networkidle" : "commit",
@@ -202,7 +203,7 @@ async function main() {
   } else {
     // Example: wait for a real KPI value to appear in the DOM.
     // Customise the pattern to a substring of a value you know is on the page.
-    // await waitForKpi(page, /3,06.*hours/);
+    // await waitForContent(page, /3,06.*hours/);
     await page.waitForTimeout(3000);
   }
 
@@ -231,8 +232,8 @@ async function main() {
     //     await wheelScrollSpa(page, "main", 1100);
     //     await page.waitForTimeout(800);
     //     anchors[scene.id] = {
-    //       table: (await captureRect(page, '[aria-label="Top 15"] table'))!,
-    //       firstRow: (await captureRect(page, '[aria-label="Top 15"] tbody tr'))!,
+    //       table: (await captureRect(page, '[aria-label="Critical items"] table'))!,
+    //       firstRow: (await captureRect(page, '[aria-label="Critical items"] tbody tr'))!,
     //     };
     //   }
 
@@ -291,7 +292,7 @@ async function main() {
 }
 
 // Re-export helpers so they can be imported into other recorder scripts.
-export { smoothScrollStatic, wheelScrollSpa, waitForKpi, captureRect };
+export { smoothScrollStatic, wheelScrollSpa, waitForContent, captureRect };
 
 main().catch((err) => {
   console.error(err);

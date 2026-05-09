@@ -226,7 +226,7 @@ A scene rarely shows a static frame for its full duration — it usually starts 
 
 Two real cases:
 - **Scroll scene.** `wheelScrollSpa(page, "main", 1100)` runs ~1.5 s. A `PulseAnchor` over the row that ends up in view will hover over moving content for the first 45 frames @ 30fps, then the row arrives underneath an already-rendered pulse. Reads as "the overlay appeared in the wrong place".
-- **Click scene.** `page.click("Concept 2030")` triggers a React recompute that takes ~1.5 s before new KPI values render. A `DeltaChip` showing the new value appears next to the *old* tile value — cognitive dissonance.
+- **Click scene.** `page.click("Scenario B")` triggers a React recompute that takes ~1.5 s before new tile values render. A `DeltaChip` showing the new value appears next to the *old* tile value — cognitive dissonance.
 
 Fix: every overlay component takes a `startDelay` in frames and offsets its lifecycle. Scene wrappers like `<FadeInOut>` should accept it directly:
 
@@ -270,11 +270,11 @@ Coordinates measured at `scrollTop=0` in DevTools won't match the live page afte
 import markers from "../public/markers.json";
 
 export const SceneTop15: React.FC = () => {
-  const a = markers.anchors.top15Bottlenecks;
+  const a = markers.anchors.criticalItems;
   return (
-    <FadeInOut totalFrames={SCENE_TIMINGS.top15Bottlenecks.duration} startDelay={50}>
+    <FadeInOut totalFrames={SCENE_TIMINGS.criticalItems.duration} startDelay={50}>
       <PulseAnchor {...a.table} variant="critical" />
-      <CalloutLabel x={a.firstRow.x + a.firstRow.width + 16} y={a.firstRow.y} title="Hottest corridor" variant="critical" />
+      <CalloutLabel x={a.firstRow.x + a.firstRow.width + 16} y={a.firstRow.y} title="Highest priority" variant="critical" />
     </FadeInOut>
   );
 };

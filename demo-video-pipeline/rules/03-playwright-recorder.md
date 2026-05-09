@@ -242,7 +242,7 @@ const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ /* recordVideo: ... */ });
 const page = await context.newPage();
 
-// ... waitForFonts, waitForKpi, etc ...
+// ... waitForFonts, waitForContent, etc ...
 
 const recordStart = Date.now();
 const headTrimMs = recordStart - videoStart;
@@ -273,20 +273,20 @@ const anchors: Record<string, SceneAnchors> = {};
 // Inside each scene step:
 await wheelScrollSpa(page, "main", 1100);
 await page.waitForTimeout(800); // let layout settle
-anchors.top15Bottlenecks = await page.evaluate(() => {
+anchors.criticalItems = await page.evaluate(() => {
   const r = (el: Element | null): Rect | null => {
     if (!el) return null;
     const b = el.getBoundingClientRect();
     return { x: Math.round(b.x), y: Math.round(b.y), width: Math.round(b.width), height: Math.round(b.height) };
   };
   return {
-    table: r(document.querySelector('[aria-label="Top 15 bottlenecks"] table'))!,
-    firstRow: r(document.querySelector('[aria-label="Top 15 bottlenecks"] tbody tr'))!,
+    table: r(document.querySelector('[aria-label="Critical items"] table'))!,
+    firstRow: r(document.querySelector('[aria-label="Critical items"] tbody tr'))!,
   };
 });
 ```
 
-In Remotion, `<PulseAnchor {...markers.anchors.top15Bottlenecks.table} variant="critical" />` renders perfectly aligned with what's actually on screen at that frame. **Always store the full DOM rect shape `{x, y, width, height}`** — never abbreviate to `{x, y, w, h}`. PulseBox / CalloutLabel / etc. take the same DOM shape, so spreading `{...rect}` works without conversion helpers. Mixing the two is one of the highest-friction footguns in the pipeline.
+In Remotion, `<PulseAnchor {...markers.anchors.criticalItems.table} variant="critical" />` renders perfectly aligned with what's actually on screen at that frame. **Always store the full DOM rect shape `{x, y, width, height}`** — never abbreviate to `{x, y, w, h}`. PulseBox / CalloutLabel / etc. take the same DOM shape, so spreading `{...rect}` works without conversion helpers. Mixing the two is one of the highest-friction footguns in the pipeline.
 
 ## Smooth scroll for hidden content
 
