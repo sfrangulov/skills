@@ -5,9 +5,9 @@ description: Remotion overlay project — intro/outro, callouts, count-up number
 
 # Remotion overlay project
 
-## ⚠️ Load `remotion-video-creation` first
+## ⚠️ Load `remotion-best-practices` first
 
-Before writing any code in this phase, invoke the Skill tool to load `remotion-video-creation`. It carries 29 rules on Remotion's API — animations, audio, captions, transitions, the `interpolate` / `spring` patterns, gotchas around `<Video>` / `<OffthreadVideo>`, `staticFile`, font loading, and rendering. This rule file does not repeat any of that; it shows the *project shape* for a demo-overlay setup. Without `remotion-video-creation` loaded you will end up using CSS animations (silently dead in Remotion), miss `premountFor`, mis-time springs, and generally fight the framework.
+Before writing any code in this phase, invoke the Skill tool to load `remotion-best-practices` (the official `@remotion/skills` from remotion-dev). It carries 36 rules on Remotion's API — animations, audio, captions, transitions, `interpolate` / `spring`, `<Video>` / `<OffthreadVideo>` gotchas, `staticFile`, font loading, MapLibre embeds, silence detection, DOM measuring, and rendering. This rule file does not repeat any of that; it shows the *project shape* for a demo-overlay setup. Without `remotion-best-practices` loaded you will end up using CSS animations (silently dead in Remotion), miss `premountFor`, mis-time springs, and generally fight the framework.
 
 ## What it is
 

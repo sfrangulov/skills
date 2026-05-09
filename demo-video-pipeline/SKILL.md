@@ -4,7 +4,7 @@ description: End-to-end automated pipeline for recording polished 30-90s demo vi
 license: MIT
 metadata:
   author: sfrangulov
-  version: "1.3.0"
+  version: "1.4.0"
   tags: video, demo, recording, playwright, remotion, elevenlabs, screencast, presentation, react
 ---
 
@@ -12,10 +12,10 @@ metadata:
 
 Two other skills carry the deep API knowledge for the tools in this pipeline. Without them, you will spin on basics this skill does not repeat. **As soon as this skill triggers, invoke the Skill tool for both of these:**
 
-- `remotion-video-creation` — 29 rules covering Remotion's API: animations, audio, captions, transitions, the `interpolate` / `spring` patterns, gotchas around `<Video>` / `<OffthreadVideo>`. Load it before touching anything in `src/` (phase 4).
+- `remotion-best-practices` — official `@remotion/skills` from remotion-dev. 36 rules covering Remotion's API: animations, audio, captions, transitions, the `interpolate` / `spring` patterns, `useCurrentFrame` rules, `<Video>` / `<OffthreadVideo>` gotchas, MapLibre embed, `silence-detection`, `measuring-dom-nodes`, `voiceover`, and more. Pinned to a Remotion release version, so it's the most authoritative source for the API. Load it before touching anything in `src/` (phase 4).
 - `playwright-best-practices` — covers the locator strategy, auto-waiting, network mocking, debugging flaky tests, and CI patterns. Load it before writing `scripts/record-demo.ts` (phase 3) — the SPA waiting / `waitForFunction` patterns in rules/03 are a thin slice of what this skill knows.
 
-Skipping this is the #1 way to lose an hour rediscovering things. Real example: forgetting `remotion-video-creation` led to using CSS animations inside Remotion (silently produces a frozen frame in the rendered mp4 — Remotion only honours `useCurrentFrame()`-driven animation).
+Skipping this is the #1 way to lose an hour rediscovering things. Real example: forgetting `remotion-best-practices` led to using CSS animations inside Remotion (silently produces a frozen frame in the rendered mp4 — Remotion only honours `useCurrentFrame()`-driven animation).
 
 ## Step 0 — Intake (run BEFORE anything else)
 
@@ -104,7 +104,7 @@ Read the rule files in phase order — each phase produces one artifact:
 
 ```bash
 # 0. Load companion skills first (Skill tool):
-#      remotion-video-creation, playwright-best-practices
+#      remotion-best-practices, playwright-best-practices
 
 # 1. Add the zoom hook to your HTML/app (see rules/02)
 
@@ -192,6 +192,6 @@ These checks are not optional — the pipeline regularly produces videos that lo
 
 ## See also
 
-- `remotion-video-creation` and `playwright-best-practices` — load both at the start of the session, not as references (see "Companion skills" at the top)
+- `remotion-best-practices` and `playwright-best-practices` — load both at the start of the session, not as references (see "Companion skills" at the top)
 - ElevenLabs API: https://docs.elevenlabs.io/api-reference/text-to-speech
 - VHS (terminal recording alternative): https://github.com/charmbracelet/vhs
