@@ -1,0 +1,28 @@
+{
+  "name": "demo-vN",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "record": "tsx scripts/record-demo.ts",
+    "dev": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts DemoV1 out/demo.mp4",
+    "mix": "bash scripts/final-assembly.sh"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "@remotion/google-fonts": "^4.0.0",
+    "@remotion/media": "^4.0.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "playwright": "^1.48.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.5.0"
+  }
+}
