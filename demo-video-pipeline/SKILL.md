@@ -4,7 +4,7 @@ description: End-to-end automated pipeline for recording polished 30-90s demo vi
 license: MIT
 metadata:
   author: sfrangulov
-  version: "1.1.1"
+  version: "1.2.0"
   tags: video, demo, recording, playwright, remotion, elevenlabs, screencast, presentation, react
 ---
 
@@ -94,6 +94,12 @@ pnpm render   # → out/demo.mp4
 
 # 8. Mix audio (see rules/06 for the ducking variant)
 bash scripts/final-assembly.sh
+
+# 9. MANDATORY before showing the user — extract and review preview frames
+mkdir -p preview && ffmpeg -y -i out/demo-final.mp4 -vf "fps=1/4" preview/f-%02d.png
+# Open every PNG. For each: does the overlay cover content? does the pulse
+# land on its target after the scroll? do the chip values match what the UI
+# is actually showing in that frame?
 ```
 
 ## Templates
@@ -119,11 +125,23 @@ The [templates/](templates/) directory contains drop-in files:
 - **Cinematic zoom != fit-to-element** — auto-fit gives a correct but boring frame. Off-center origin (`oy: 99` or `ox: 3`) creates drama. Numeric override beats target ~60% of the time
 - **The HUD scene indicator** in the recording can be distracting — either hide it before the production take, or keep it as "scene markers" to help align voiceover later
 - **ffmpeg ducking direction matters** — sidechaincompress order is `[main][sidechain]`, so the music must be the main input and the voice the sidechain. The other order ducks the voice instead — see rules/06 for the correct filter
+- **`tsx` injects a `__name` helper that breaks `page.evaluate` callbacks** — running the recorder via `tsx scripts/record-demo.ts` causes any non-trivial `page.evaluate` to fail in the browser with `ReferenceError: __name is not defined`. Esbuild adds the helper for stack-trace names; Playwright stringifies the closure and ships it across without the helper. Fix once at session start: `await page.addInitScript(() => { (globalThis as any).__name = (fn: any) => fn; });`. Different cause from the CSP/string-eval issue below — same symptom area, opposite remediation
+- **`page.mouse.wheel` beats `el.scrollTop = N` on real SPAs** — virtualised lists and controlled-scroll containers silently revert programmatic scrollTop on the next React render. The mp4 ends up frozen on the same view all session. Use the native wheel input. The `scrollTop` helper still works for static demo HTML
+- **`recordVideo` writes a 1–3 s pre-roll** — the file starts at `context.newPage()`, which is earlier than your scene markers (you usually wait for fonts/login/data first). Remotion will then run overlays ahead of the underlying content. Capture `videoStart = Date.now()` before `newPage()` and write `headTrimMs = recordStart - videoStart` into `markers.json`; the markers schema already shifts everything off that field. No ffmpeg trim needed
 - **`waitUntil: "networkidle"` is a trap on real SPAs** — chat sockets, SSE, polling never go quiet. Use `"commit"` + an explicit `page.waitForFunction` on a real KPI value (e.g. `/3,06.*hours/`), not on a heading (skeletons keep the heading). See rules/03
 - **`page.waitForFunction(fn, {timeout})` silently uses the 30s default** — the second positional arg is the predicate's input, not options. Correct call: `page.waitForFunction(fn, null, { timeout: 90000 })`. Headless renders data-heavy KPIs 5–10× slower than headed, so 90s+ timeouts are the norm
 - **String-eval is blocked inside `page.evaluate`** — sandbox CSPs and security hooks block dynamic-code constructors. Pass real closures, not stringified callbacks
 - **Reconnoiter with the Playwright MCP server before writing the recorder** — click around the live page, capture screenshots, find the real selectors and the actual time-to-content. Saves 2–3 recording iterations
 - **Open at the entry, not the deep link** — start the recording at `/`, click into the navigation, land on the feature. Three cheap seconds turn a "cut" into a "tour"
+
+## Before you ship the video
+
+These checks are not optional — the pipeline regularly produces videos that look correct in Remotion Studio and break in subtle ways in the final mp4. Run them every time:
+
+1. **Frame sweep.** `ffmpeg -i out/demo-final.mp4 -vf "fps=1/4" preview/f-%02d.png` and open every PNG. For each frame ask: does any overlay cover the content the voiceover refers to? Is a pulse / callout pointing at empty space (target hasn't arrived after scroll yet)? Do chip values match the values the UI is actually displaying in that frame?
+2. **Duration sanity.** `ffprobe -v error -show_entries format=duration out/demo-final.mp4` should land within 0.3 s of `markers.totalDurationMs / 1000`. Anything bigger means the audio mux pulled `-shortest` to the wrong stream or the pre-roll wasn't trimmed.
+3. **Mobile playback.** AirDrop the mp4 to a phone and play it once. Codec-compat issues hit only on real devices, never in QuickTime preview.
+4. **Listen at platform LUFS.** Open in QuickTime, listen end-to-end with system volume at 50%. Voice should never be inaudible against the music; music should never feel pushed down to silence.
 
 ## See also
 

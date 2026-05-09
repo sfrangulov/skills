@@ -220,6 +220,83 @@ const snappy = { damping: 20, stiffness: 200 }; // snappy UI
 const bouncy = { damping: 8 };                  // playful
 ```
 
+## Sync overlays to in-scene actions, not to scene start
+
+A scene rarely shows a static frame for its full duration — it usually starts with a recorder action (scroll, click, tab switch) that takes 1–2 s to settle. If your overlay renders at frame 0 of the `<Sequence>`, it appears over the *unsettled* state and looks misaligned.
+
+Two real cases:
+- **Scroll scene.** `wheelScrollSpa(page, "main", 1100)` runs ~1.5 s. A `PulseAnchor` over the row that ends up in view will hover over moving content for the first 45 frames @ 30fps, then the row arrives underneath an already-rendered pulse. Reads as "the overlay appeared in the wrong place".
+- **Click scene.** `page.click("Concept 2030")` triggers a React recompute that takes ~1.5 s before new KPI values render. A `DeltaChip` showing the new value appears next to the *old* tile value — cognitive dissonance.
+
+Fix: every overlay component takes a `startDelay` in frames and offsets its lifecycle. Scene wrappers like `<FadeInOut>` should accept it directly:
+
+```tsx
+const FadeInOut: React.FC<{
+  children: React.ReactNode;
+  totalFrames: number;
+  startDelay?: number;
+  inFrames?: number;
+  outFrames?: number;
+}> = ({ children, totalFrames, startDelay = 0, inFrames = 14, outFrames = 14 }) => {
+  const frame = useCurrentFrame();
+  const localFrame = frame - startDelay;
+  if (localFrame < 0) return null;
+  const remain = totalFrames - startDelay;
+  const opacity = interpolate(
+    localFrame,
+    [0, inFrames, remain - outFrames, remain],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  return <div style={{ opacity }}>{children}</div>;
+};
+```
+
+Empirical defaults at 30 fps:
+
+| Scene type | `startDelay` | Why |
+|---|---|---|
+| Scroll scene (`wheelScrollSpa`) | 50 frames (1.67 s) | 1.5 s scroll + 0.2 s buffer |
+| Click / tab-switch scene | 45–75 frames (1.5–2.5 s) | Click + React recompute of KPIs |
+| Static-view scene (no in-scene action) | 0 or 14 (just enter-fade) | Nothing to wait for |
+
+For multi-chip cascades (e.g. four KPI deltas appearing in sequence after a click), stagger them: `delayFrames = 45, 70, 95, 120`. The click-latency offset stays — the cascade adds on top.
+
+## Anchors come from `markers.json`, not from your editor
+
+Coordinates measured at `scrollTop=0` in DevTools won't match the live page after a scroll. The recorder writes per-scene anchors into `markers.json` (see rules/03 → "Per-scene anchors"); read them in your scene component:
+
+```tsx
+import markers from "../public/markers.json";
+
+export const SceneTop15: React.FC = () => {
+  const a = markers.anchors.top15Bottlenecks;
+  return (
+    <FadeInOut totalFrames={SCENE_TIMINGS.top15Bottlenecks.duration} startDelay={50}>
+      <PulseAnchor {...a.table} variant="critical" />
+      <CalloutLabel x={a.firstRow.x + a.firstRow.width + 16} y={a.firstRow.y} title="Hottest corridor" variant="critical" />
+    </FadeInOut>
+  );
+};
+```
+
+Hardcoded `x={60} y={520}` is a smell — it means the overlay isn't anchored to a real DOM element and will drift the moment the layout changes.
+
+### One rect shape — never abbreviate
+
+Always use the DOM-native shape `{ x, y, width, height }` everywhere: `markers.json` writes it, scene components read it, overlay components (`PulseBox`, `CalloutLabel`) accept it. **Do not** introduce shorter aliases like `{ x, y, w, h }` — spreading them silently produces `width: undefined, height: undefined` and overlay components render `0×0` boxes that you can't see. TypeScript won't catch it because the props type widens through `as any` casts inevitable in this code. The cure is to never need a converter helper in the first place.
+
+## Big text panels are floating panels
+
+`SectionTitle` / large hero captions / multi-line summaries that aren't anchored to a UI element are floating panels. They look amateurish on top of real product UI — the eye can't tell whether the text is referring to something, and if so, what.
+
+Use them only over zones that are guaranteed empty:
+- **Intro / outro scenes** sitting on top of a dimmer (`background: rgba(0,0,0,0.85)`)
+- **Vignettes** with a known dark zone (top 200px or bottom 200px on most dashboards)
+- **Black-letterbox transitions** between major scenes
+
+Default for everything else: anchor a small chip (`DeltaChip`, `CalloutLabel`) to a specific UI element, position from that element's rect. Before shipping any scene with a `SectionTitle`, open the rendered preview frame and confirm it isn't sitting on top of something the voiceover refers to.
+
 ## Reusable overlay components
 
 See the templates in [templates/](../templates/):

@@ -1,9 +1,10 @@
 /**
  * Playwright headless recorder.
  *
- * Drives keyboard scenes in your demo HTML/URL, records video at 1920x1080,
- * transcodes webm → mp4 via ffmpeg, and writes public/markers.json so the
- * Remotion composition can read scene timings as ground truth.
+ * Drives keyboard scenes (or clicks/scrolls) in your demo HTML/URL,
+ * records video at 1920x1080, transcodes webm → mp4 via ffmpeg, and
+ * writes public/markers.json so the Remotion composition can read scene
+ * timings AND per-scene DOM anchor rects as ground truth.
  *
  * Usage:
  *   pnpm tsx scripts/record-demo.ts
@@ -28,6 +29,10 @@ const OUT_MP4 = path.join(PUBLIC_DIR, "recording.mp4");
 const MARKERS_JSON = path.join(PUBLIC_DIR, "markers.json");
 
 const FPS = 30;
+const VIEWPORT = { width: 1920, height: 1080 };
+
+type Rect = { x: number; y: number; width: number; height: number };
+type SceneAnchors = Record<string, Rect>;
 
 type Scene = {
   /** Stable id used by markers.json + Remotion timing.ts. */
@@ -51,11 +56,11 @@ const SCENES: Scene[] = [
 ];
 
 /* ─────────────────────────────────────────────────────────────
- * smoothScroll — cosine-eased scroll inside a container.
- * Use it for SPAs that hide content in overflow:auto panels.
- * The motion itself is a usable scene (4s ≈ a camera dolly).
+ * smoothScrollStatic — direct scrollTop animation with a cosine ease.
+ * Use on STATIC HTML demos. On real React/Vue/Svelte SPAs, React
+ * resets scrollTop on re-render — use wheelScrollSpa instead.
  * ───────────────────────────────────────────────────────────── */
-async function smoothScroll(
+async function smoothScrollStatic(
   page: Page,
   selector: string,
   deltaY: number,
@@ -82,6 +87,32 @@ async function smoothScroll(
 }
 
 /* ─────────────────────────────────────────────────────────────
+ * wheelScrollSpa — synthetic wheel events. Use on REAL SPAs.
+ * Native wheel events fire on whatever scroll-container is under the
+ * cursor and aren't fought by React's render cycle.
+ * ───────────────────────────────────────────────────────────── */
+async function wheelScrollSpa(
+  page: Page,
+  selectorForCursor: string,
+  totalDeltaY: number,
+  opts: { steps?: number; perStepMs?: number } = {},
+) {
+  const { steps = 30, perStepMs = 50 } = opts;
+  // Move the cursor inside the target so wheel events hit the right container.
+  const box = await page.locator(selectorForCursor).first().boundingBox();
+  if (box) {
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  } else {
+    await page.mouse.move(VIEWPORT.width / 2, VIEWPORT.height / 2);
+  }
+  const stepDelta = totalDeltaY / steps;
+  for (let i = 0; i < steps; i++) {
+    await page.mouse.wheel(0, stepDelta);
+    await page.waitForTimeout(perStepMs);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
  * waitForKpi — robust wait for SPA-style data fetches.
  * - waitUntil: "commit" because networkidle never fires on socket apps
  * - waitForFunction with explicit (fn, null, { timeout }) — the second
@@ -101,6 +132,27 @@ async function waitForKpi(
   );
 }
 
+/* ─────────────────────────────────────────────────────────────
+ * captureRect — measure a DOM element and return its rect in the
+ * full DOM shape ({x, y, width, height}). Always use the full shape
+ * — never abbreviate to {w, h}; PulseBox / CalloutLabel and everything
+ * downstream expects width/height, and silent 0×0 boxes are the
+ * single highest-friction footgun in the pipeline.
+ * ───────────────────────────────────────────────────────────── */
+async function captureRect(page: Page, selector: string): Promise<Rect | null> {
+  return page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return null;
+    const b = el.getBoundingClientRect();
+    return {
+      x: Math.round(b.x),
+      y: Math.round(b.y),
+      width: Math.round(b.width),
+      height: Math.round(b.height),
+    };
+  }, selector);
+}
+
 async function main() {
   rmSync(RECORDINGS_DIR, { recursive: true, force: true });
   mkdirSync(RECORDINGS_DIR, { recursive: true });
@@ -109,17 +161,31 @@ async function main() {
   console.log(`▶ Target: ${DEMO_TARGET}`);
   console.log(`▶ Output: ${OUT_MP4}`);
 
+  // recordVideo starts the moment we open the page; capture the time stamp
+  // BEFORE that so we can write headTrimMs into markers.json and shift every
+  // scene start in Remotion automatically. No ffmpeg trim needed.
+  const videoStart = Date.now();
+
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
-    viewport: { width: 1920, height: 1080 },
+    viewport: VIEWPORT,
     deviceScaleFactor: 1,
     recordVideo: {
       dir: RECORDINGS_DIR,
-      size: { width: 1920, height: 1080 },
+      size: VIEWPORT,
     },
   });
 
   const page = await context.newPage();
+
+  // tsx (esbuild) injects __name(fn, "name") helpers into compiled closures
+  // so stack traces stay readable. Playwright stringifies the closure when it
+  // ships it to the browser — but __name isn't defined on the page side, and
+  // every page.evaluate({a, b}) => ...) blows up with "ReferenceError: __name
+  // is not defined". Stub it as a passthrough at session start.
+  await page.addInitScript(() => {
+    (globalThis as any).__name = (fn: any) => fn;
+  });
 
   // For static demo HTML, "networkidle" works fine. For real SPAs use
   // "commit" + an explicit waitForKpi() on a value substring.
@@ -144,19 +210,37 @@ async function main() {
   // await page.addStyleTag({ content: `.scene-hud { display: none !important; }` });
 
   // Markers track the actual start time of each scene in ms relative to
-  // the recording. Remotion reads this to derive Sequence positions.
-  const recordingStart = Date.now();
+  // the scenes (NOT relative to the recording — headTrimMs handles that).
+  const recordStart = Date.now();
+  const headTrimMs = recordStart - videoStart;
+  console.log(`✓ pre-roll captured: headTrimMs = ${headTrimMs}ms`);
+
   const markers: { id: string; startMs: number; durationMs: number }[] = [];
+  const anchors: Record<string, SceneAnchors> = {};
 
   for (const scene of SCENES) {
-    const startMs = Date.now() - recordingStart;
+    const startMs = Date.now() - recordStart;
     console.log(`🎬 [${scene.id}] ${scene.label} (${scene.durationMs}ms)`);
     if (scene.key) await page.keyboard.press(scene.key);
+
+    // Example: capture per-scene anchors for scenes that have specific
+    // DOM elements you want overlays to attach to. Run this AFTER the
+    // page settles (post-scroll, post-tab-switch), not at scene start.
+    //
+    //   if (scene.id === "diagnostic") {
+    //     await wheelScrollSpa(page, "main", 1100);
+    //     await page.waitForTimeout(800);
+    //     anchors[scene.id] = {
+    //       table: (await captureRect(page, '[aria-label="Top 15"] table'))!,
+    //       firstRow: (await captureRect(page, '[aria-label="Top 15"] tbody tr'))!,
+    //     };
+    //   }
+
     await page.waitForTimeout(scene.durationMs);
     markers.push({ id: scene.id, startMs, durationMs: scene.durationMs });
   }
 
-  const totalDurationMs = Date.now() - recordingStart;
+  const totalDurationMs = Date.now() - recordStart;
 
   await context.close();
   await browser.close();
@@ -167,9 +251,10 @@ async function main() {
     JSON.stringify(
       {
         fps: FPS,
-        headTrimMs: 0,
+        headTrimMs,
         totalDurationMs,
         scenes: markers,
+        anchors,
       },
       null,
       2,
@@ -206,7 +291,7 @@ async function main() {
 }
 
 // Re-export helpers so they can be imported into other recorder scripts.
-export { smoothScroll, waitForKpi };
+export { smoothScrollStatic, wheelScrollSpa, waitForKpi, captureRect };
 
 main().catch((err) => {
   console.error(err);

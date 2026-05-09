@@ -39,19 +39,34 @@ The key artifact is `voiceover/script.md`. It binds scene timings to text.
 | 7 | outro | 0:58–1:00 | 2s | AIDA — answers for the whole network. Minutes, not months. |
 ```
 
-## The 2.5 words/second rule
+## Pacing depends on language — calibrate, don't assume
 
-At ~2.5 words/sec (English):
-- 6s segment ≈ 15 words
-- 8s segment ≈ 20 words
-- 10s segment ≈ 25 words
-- 14s segment ≈ 35 words
+The "2.5 words/sec" rule is for English. Other languages run noticeably different:
 
-If the text doesn't fit — **shorten the text**, don't stretch the scene. Long pauses between phrases beat machine-gun delivery.
+| Language | Starting wps | Notes |
+|---|---|---|
+| English | 2.5 | Baseline |
+| Spanish, Portuguese | 2.6–2.8 | Shorter syllables, faster cadence |
+| German, French | 2.2 | Longer compound words / liaison pauses |
+| Russian | 2.0 | More syllables per word, slower cyrillic delivery |
+| Japanese (mora-counted) | 4.0 mora/sec ≈ 1.6 wps | Convert to mora to budget properly |
 
-## ElevenLabs — two paths
+These are starting points, not laws. Real wps depends on the voice (Anna ≠ Boris on Eleven), the Speed slider (0.8–1.2× shifts everything proportionally), punctuation density (every comma adds ~150 ms), and emphasis prefixes like `[Confidently]` (slow you down). Calibrate for each project:
 
-### A. Web UI (fast, no code)
+1. Generate a 30-second test segment with your final voice + settings
+2. Open it in Audacity, count actual seconds for known word count
+3. Use that wps for the rest of the script
+4. If you over-budget by >25%, you'll re-record video; under 25%, you can rescue with `setpts` (see rules/06)
+
+For a Russian 60s reel that's ~120 words at 2.0 wps. The same script in English would fit in 48s.
+
+If the text doesn't fit the scene — **shorten the text**, don't stretch the scene. Long pauses between phrases beat machine-gun delivery.
+
+## Providers
+
+ElevenLabs is the default; the others are real options for specific situations. Pick before you write the script — the per-segment character limit on Artlist, for example, will reshape long copy.
+
+### ElevenLabs — Web UI (fast, no code)
 
 1. Go to https://elevenlabs.io
 2. Voices → pick a stock voice (for English: "Rachel", "Adam", "Antoni"; for Russian: "Anna", "Boris", "Mark" are reliable)
@@ -65,7 +80,7 @@ If the text doesn't fit — **shorten the text**, don't stretch the scene. Long 
 
 **Price:** ~$5/month Starter plan = 30k characters ≈ 30 minutes of audio.
 
-### B. API (programmatic)
+### ElevenLabs — API (programmatic)
 
 ```bash
 pnpm add elevenlabs
@@ -99,7 +114,20 @@ for await (const chunk of audio) chunks.push(chunk);
 writeFileSync("voiceover/voice.mp3", Buffer.concat(chunks));
 ```
 
-## Voice cloning — your own voice
+### Artlist V2 (web only, brand-voice catalogue)
+
+Artlist V2 is worth picking when you need a voice from Artlist's curated catalogue (often the only legit option for licensed brand voices) and you don't have ElevenLabs API access. Quirks worth knowing before you start:
+
+- **No public API as of mid-2026** — Web UI only. No way to script generation; budget the manual paste/download per segment.
+- **2000 character limit per generation.** A 60s English script (~150 words) fits; a 60s German or Russian one usually doesn't. Plan to split into 2–3 segments and concatenate with `ffmpeg -i 'concat:s1.mp3|s2.mp3' -c copy out.mp3`.
+- **Two pause syntaxes.** Voices marked "non-native accent" use SSML `<break time="500ms"/>`. Voices marked "native" use a custom delimiter `<#500#>`. Picking the wrong one gives you literal `<break>` text in the audio. Test with one short pause first; the right one is silent in the output.
+- **Settings that matter:** Speed (0.8×–1.2×), Emotion (only on MiniMax / Cartesia voices), Effect (chamber/clean). Keep Speed at 1.0× unless you've already maxed pause-trimming and still over-budget.
+- **For Russian** — Eleven Multilingual v2 voices in the Artlist catalogue are the most reliable. The "Anna" / "Mark" voices ported from ElevenLabs sound the same as the direct API.
+
+Workflow: write script in segments ≤2000 chars → paste each into Artlist UI → download mp3 → `ffmpeg concat` → use as `voiceover/voice.mp3` exactly like the ElevenLabs path.
+
+### OpenAI TTS (cheap fallback)
+
 
 If you want your own voice in the video:
 1. Record 1–2 minutes of clean speech (quiet room, USB mic)
@@ -118,9 +146,8 @@ Two paths from there:
 
 Don't try to speed-change the audio (>1.05×) — it sounds chipmunk-y.
 
-## Alternative: OpenAI TTS
+Cheaper than ElevenLabs ($15 per million chars), less realistic. Good fallback for prototyping:
 
-Cheaper ($15 per million chars), less realistic:
 ```ts
 import OpenAI from "openai";
 const openai = new OpenAI();
@@ -133,9 +160,9 @@ const buffer = Buffer.from(await audio.arrayBuffer());
 writeFileSync("voiceover/voice.mp3", buffer);
 ```
 
-## Alternative: live voice
+### Live voice (max naturalness)
 
-If you have no TTS budget or want maximum naturalness:
+No TTS budget or you want maximum naturalness:
 1. Record voiceover in QuickTime / GarageBand / Voice Memos
 2. Denoise: `ffmpeg -i raw.m4a -af "afftdn=nf=-25" voice.mp3`
 3. Normalise loudness: `ffmpeg -i voice.mp3 -af loudnorm=I=-16:TP=-1.5:LRA=11 voice-norm.mp3`

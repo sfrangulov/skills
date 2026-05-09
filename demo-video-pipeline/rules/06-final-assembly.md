@@ -181,6 +181,36 @@ Parameters to reduce size:
 - `-preset slower` — better compression at the same CRF
 - `-b:a 128k` instead of 192k for audio
 
+## When TTS overshoots video — `setpts` rescue (last resort)
+
+You generated the voiceover, opened it in Audacity, and it's 2:12 instead of the planned 1:50. Three options, in order of preference:
+
+1. **Trim natural pauses in the voice mp3 first.** Eleven Multilingual adds 200–400 ms between sentences by default. Half of those are dramatic and worth keeping; half are filler. Audacity → Truncate Silence (threshold −40 dB, 200 ms minimum, truncate to 80 ms) routinely reclaims 5–10 seconds without sounding rushed.
+2. **Tighten the script and re-generate.** Drop adjectives, merge two short sentences. ElevenLabs costs are trivial compared to your time.
+3. **Slow the video to match.** Only after (1) and (2) — and only if the residual ratio is **≤1.25×**. Past that, animations look molasses, scrolls feel laggy.
+
+The slowdown command:
+
+```bash
+AUDIO_DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 voiceover/voice.mp3)
+VIDEO_DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 out/demo.mp4)
+RATIO=$(python3 -c "print($AUDIO_DUR/$VIDEO_DUR)")
+
+ffmpeg -y -i out/demo.mp4 -i voiceover/voice.mp3 \
+  -filter_complex "[0:v]setpts=${RATIO}*PTS[v]" \
+  -map "[v]" -map 1:a \
+  -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p \
+  -c:a aac -b:a 192k -movflags +faststart \
+  out/demo-final.mp4
+```
+
+Important caveats:
+- This re-encodes the video (no `-c:v copy`), so you lose the cheap final mux. Adds 1–3 minutes.
+- It slows **everything baked into the mp4** — your Remotion overlays included. If the original springs felt snappy at 30 fps, they'll feel sluggish at 0.83× playback. For ratios beyond ~1.15× you'll usually want to re-render Remotion at the longer duration instead.
+- Scenes that derive tempo from interactions (the click → KPI recompute moment, scroll dolly) slow proportionally. If those felt right at the original speed, they won't after.
+
+If you've used setpts and don't like the result, the right next step is almost always re-generate the audio tighter, not stack another time-stretch on top.
+
 ## Pre-publish checks
 
 1. **Audio level** — open in QuickTime, listen — voice clearly audible, music doesn't fight it

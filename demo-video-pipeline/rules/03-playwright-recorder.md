@@ -205,35 +205,107 @@ const target = ".kpi-card";
 await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView(), target);
 ```
 
-## Smooth scroll for hidden content
+### `tsx` injects a `__name` helper that breaks `page.evaluate`
 
-SPAs often hide 70%+ of a page inside `overflow: auto` containers. Scrolling them by hand looks great on camera. Use the helper bundled in `templates/record-demo.ts`:
+This is a *separate* failure mode from the CSP one above, even though both surface as "evaluate doesn't work":
 
-```ts
-async function smoothScroll(page, selector, deltaY, durationMs) {
-  await page.evaluate(
-    ({ sel, dy, dur }) => new Promise<void>((resolve) => {
-      const el = document.querySelector(sel) as HTMLElement;
-      if (!el) return resolve();
-      const start = el.scrollTop;
-      const t0 = performance.now();
-      const tick = () => {
-        const t = Math.min(1, (performance.now() - t0) / dur);
-        el.scrollTop = start + dy * (1 - Math.cos(Math.PI * t)) / 2;
-        if (t < 1) requestAnimationFrame(tick);
-        else resolve();
-      };
-      requestAnimationFrame(tick);
-    }),
-    { sel: selector, dy: deltaY, dur: durationMs },
-  );
-}
-
-// usage
-await smoothScroll(page, ".right-panel", 600, 4000);
+```
+ReferenceError: __name is not defined
+    at <anonymous>:2:5
 ```
 
-Cosine-eased, so the start and end feel like a camera move, not a `scrollTo`. A 4-second smooth scroll is itself a usable scene.
+Cause: when you run the recorder via `pnpm tsx scripts/record-demo.ts`, esbuild (which `tsx` uses under the hood) wraps every named function with a `__name(fn, "originalName")` helper so stack traces stay readable. Playwright stringifies your closure with `Function.prototype.toString()` and ships it to the browser, but the `__name` helper isn't defined there. Every non-trivial `page.evaluate(({a, b}) => ...)` blows up.
+
+The clean fix is one line at session start — stub `__name` on the page side as a no-op:
+
+```ts
+await page.addInitScript(() => {
+  // tsx/esbuild injects __name(fn, "originalName") helpers into compiled
+  // closures. Playwright ships the stringified closure to the page, where
+  // __name is otherwise undefined. Define it as a passthrough.
+  (globalThis as any).__name = (fn: any) => fn;
+});
+```
+
+Don't try to "fix" this by passing the closure body as a string — that pattern is exactly what the CSP / security hook in the section above blocks, plus it kills type safety. Stick with real closures and the init-script stub.
+
+### `recordVideo` records a pre-roll — write `headTrimMs` to markers
+
+Playwright's `recordVideo` starts the moment `context.newPage()` is called, which is several seconds before your scenes start (you wait for fonts, login, KPI data, etc.). Without compensating, the mp4 has 1–3 s of pre-roll that the markers don't account for, so Remotion overlays end up running ahead of the underlying content.
+
+Don't trim the file with ffmpeg — `-c copy` only seeks to keyframes (~1–2 s granularity at CRF 18 / preset slow), and re-encoding to get frame-accurate trim costs minutes. Instead, **shift the markers**: `markers.json` already has a `headTrimMs` field that Remotion reads to offset every scene start automatically.
+
+```ts
+// Before navigation:
+const videoStart = Date.now();
+const browser = await chromium.launch({ headless: true });
+const context = await browser.newContext({ /* recordVideo: ... */ });
+const page = await context.newPage();
+
+// ... waitForFonts, waitForKpi, etc ...
+
+const recordStart = Date.now();
+const headTrimMs = recordStart - videoStart;
+
+// then run scenes, capture relative markers as before, and write:
+writeFileSync(MARKERS_JSON, JSON.stringify({
+  fps: 30,
+  headTrimMs,                 // ← Remotion subtracts this from every startMs
+  totalDurationMs,
+  scenes,
+  anchors,                    // see "Per-scene anchors" below
+}, null, 2));
+```
+
+Frame-accurate, no re-encode, robust.
+
+### Per-scene anchors — measure rects after each scroll, not once
+
+UI element positions change when you scroll. If you measure `getBoundingClientRect()` once at `scrollTop=0` and reuse it for a scene whose recorder also scrolled the page, your pulse / callout overlays will land off-screen.
+
+Capture rects per-scene, right after the scroll/click settles, and write them into `markers.json` so Remotion can read them as ground truth:
+
+```ts
+type Rect = { x: number; y: number; width: number; height: number };
+type SceneAnchors = Record<string, Rect>;
+const anchors: Record<string, SceneAnchors> = {};
+
+// Inside each scene step:
+await wheelScrollSpa(page, "main", 1100);
+await page.waitForTimeout(800); // let layout settle
+anchors.top15Bottlenecks = await page.evaluate(() => {
+  const r = (el: Element | null): Rect | null => {
+    if (!el) return null;
+    const b = el.getBoundingClientRect();
+    return { x: Math.round(b.x), y: Math.round(b.y), width: Math.round(b.width), height: Math.round(b.height) };
+  };
+  return {
+    table: r(document.querySelector('[aria-label="Top 15 bottlenecks"] table'))!,
+    firstRow: r(document.querySelector('[aria-label="Top 15 bottlenecks"] tbody tr'))!,
+  };
+});
+```
+
+In Remotion, `<PulseAnchor {...markers.anchors.top15Bottlenecks.table} variant="critical" />` renders perfectly aligned with what's actually on screen at that frame. **Always store the full DOM rect shape `{x, y, width, height}`** — never abbreviate to `{x, y, w, h}`. PulseBox / CalloutLabel / etc. take the same DOM shape, so spreading `{...rect}` works without conversion helpers. Mixing the two is one of the highest-friction footguns in the pipeline.
+
+## Smooth scroll for hidden content
+
+SPAs often hide 70%+ of a page inside `overflow: auto` containers. Scrolling them on camera looks great. The trick is *which* scroll API you use:
+
+- **`wheelScrollSpa`** — synthesizes native wheel events. Use this on real React/Vue/Svelte SPAs. It works on virtualised lists (`react-window`, `react-virtualized`) and on controlled-scroll containers where React owns the `scrollTop` state. Anything programmatic (`el.scrollTop = N`) gets silently reverted on the next render and the recording ends up frozen on the same view all session.
+- **`smoothScrollStatic`** — directly animates `el.scrollTop` with a cosine ease. Use this on static demo HTML where there's no framework re-render to fight. Cleaner motion (no inertia / momentum), finer control.
+
+Both helpers are in `templates/record-demo.ts`. Default to `wheelScrollSpa` unless you've confirmed the page isn't a framework SPA.
+
+```ts
+// SPA (default): native wheel, lands every time
+await wheelScrollSpa(page, "main", 1100, { steps: 30, perStepMs: 50 });
+
+// Static demo HTML: smoother visually, no inertia
+await smoothScrollStatic(page, ".right-panel", 600, 4000);
+```
+
+A 1.5-second wheel scroll (30 steps × 50 ms) is itself a usable scene — pair it with a `startDelay` on the overlay (see rules/04) so the callout appears once the scroll settles.
 
 ## markers.json — single source of truth for timings
 

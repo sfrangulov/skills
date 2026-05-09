@@ -1,7 +1,7 @@
 {
-  "_comment": "Written by scripts/record-demo.ts after the recording finishes. Read by src/timing.ts. headTrimMs lets you slice off a slow head with ffmpeg without re-recording — every scene shifts automatically.",
+  "_comment": "Written by scripts/record-demo.ts after the recording finishes. Read by src/timing.ts. headTrimMs lets you slice off a slow head with ffmpeg without re-recording — every scene shifts automatically. anchors hold per-scene DOM rects measured AFTER each scroll/click settled, so Remotion can position pulses/callouts on real targets.",
   "fps": 30,
-  "headTrimMs": 0,
+  "headTrimMs": 1500,
   "totalDurationMs": 60000,
   "scenes": [
     { "id": "intro",          "startMs": 0,     "durationMs": 8000 },
@@ -11,5 +11,18 @@
     { "id": "cascadePulse",   "startMs": 36000, "durationMs": 12000 },
     { "id": "diagnostic",     "startMs": 48000, "durationMs": 10000 },
     { "id": "outro",          "startMs": 58000, "durationMs": 2000 }
-  ]
+  ],
+  "anchors": {
+    "kpiHighlight": {
+      "loadKpiTile":   { "x": 1240, "y": 180, "width": 320, "height": 140 },
+      "loadValueText": { "x": 1280, "y": 220, "width": 240, "height": 64 }
+    },
+    "alertHighlight": {
+      "alertCard":     { "x": 1620, "y": 240, "width": 280, "height": 120 }
+    },
+    "diagnostic": {
+      "table":         { "x":   60, "y":  41, "width": 1200, "height": 480 },
+      "firstRow":      { "x":   60, "y":  92, "width": 1200, "height":  56 }
+    }
+  }
 }
