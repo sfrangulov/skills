@@ -4,7 +4,7 @@ description: End-to-end automated pipeline for recording polished 30-90s demo vi
 license: MIT
 metadata:
   author: sfrangulov
-  version: "1.0.0"
+  version: "1.1.0"
   tags: video, demo, recording, playwright, remotion, elevenlabs, screencast, presentation, react
 ---
 
@@ -107,6 +107,11 @@ The [templates/](templates/) directory contains drop-in files:
 - **Cinematic zoom != fit-to-element** — auto-fit gives a correct but boring frame. Off-center origin (`oy: 99` or `ox: 3`) creates drama. Numeric override beats target ~60% of the time
 - **The HUD scene indicator** in the recording can be distracting — either hide it before the production take, or keep it as "scene markers" to help align voiceover later
 - **ffmpeg ducking direction matters** — sidechaincompress order is `[main][sidechain]`, so the music must be the main input and the voice the sidechain. The other order ducks the voice instead — see rules/06 for the correct filter
+- **`waitUntil: "networkidle"` is a trap on real SPAs** — chat sockets, SSE, polling never go quiet. Use `"commit"` + an explicit `page.waitForFunction` on a real KPI value (e.g. `/3,06.*hours/`), not on a heading (skeletons keep the heading). See rules/03
+- **`page.waitForFunction(fn, {timeout})` silently uses the 30s default** — the second positional arg is the predicate's input, not options. Correct call: `page.waitForFunction(fn, null, { timeout: 90000 })`. Headless renders data-heavy KPIs 5–10× slower than headed, so 90s+ timeouts are the norm
+- **String-eval is blocked inside `page.evaluate`** — sandbox CSPs and security hooks block dynamic-code constructors. Pass real closures, not stringified callbacks
+- **Reconnoiter with the Playwright MCP server before writing the recorder** — click around the live page, capture screenshots, find the real selectors and the actual time-to-content. Saves 2–3 recording iterations
+- **Open at the entry, not the deep link** — start the recording at `/`, click into the navigation, land on the feature. Three cheap seconds turn a "cut" into a "tour"
 
 ## See also
 

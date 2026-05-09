@@ -1,0 +1,15 @@
+{
+  "_comment": "Written by scripts/record-demo.ts after the recording finishes. Read by src/timing.ts. headTrimMs lets you slice off a slow head with ffmpeg without re-recording — every scene shifts automatically.",
+  "fps": 30,
+  "headTrimMs": 0,
+  "totalDurationMs": 60000,
+  "scenes": [
+    { "id": "intro",          "startMs": 0,     "durationMs": 8000 },
+    { "id": "kpiHighlight",   "startMs": 8000,  "durationMs": 6000 },
+    { "id": "alertHighlight", "startMs": 14000, "durationMs": 8000 },
+    { "id": "scenarioCountUp",  "startMs": 22000, "durationMs": 14000 },
+    { "id": "cascadePulse",   "startMs": 36000, "durationMs": 12000 },
+    { "id": "diagnostic",     "startMs": 48000, "durationMs": 10000 },
+    { "id": "outro",          "startMs": 58000, "durationMs": 2000 }
+  ]
+}

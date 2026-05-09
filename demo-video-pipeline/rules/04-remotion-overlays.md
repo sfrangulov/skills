@@ -121,6 +121,10 @@ export const DemoComposition: React.FC = () => (
 
 ## Timings — single source of truth
 
+You have two options. Pick one and stick with it.
+
+### Option A: hand-written `timing.ts` (simple)
+
 ```ts
 // src/timing.ts
 export const FPS = 30;
@@ -134,7 +138,47 @@ export const SCENE_TIMINGS = {
 } as const;
 ```
 
-**Important:** these timings must match the `durationMs` in the Playwright recorder (phase 3). If the recorder holds `key: "1"` for 8000ms, the Remotion overlay for scene 1 must be 8 seconds (240 frames).
+**Important:** these numbers must match the `durationMs` in the Playwright recorder. If the recorder holds `key: "1"` for 8000ms, the Remotion overlay for scene 1 must be 8 seconds (240 frames).
+
+This is the lightest path but it drifts: every time you tweak the recorder you must remember to update `timing.ts` too.
+
+### Option B: derive everything from `public/markers.json` (recommended for anything beyond a one-shot)
+
+The recorder writes the actual scene start / end timestamps to `public/markers.json` after the take (see rules/03). Remotion reads it and derives all `from` / `duration` values. No drift, ever.
+
+Schema (see `templates/markers.json` for a full example):
+```json
+{
+  "fps": 30,
+  "headTrimMs": 0,
+  "totalDurationMs": 60000,
+  "scenes": [
+    { "id": "intro",          "startMs": 0,     "durationMs": 8000 },
+    { "id": "kpiHighlight",   "startMs": 8000,  "durationMs": 6000 },
+    { "id": "alertHighlight", "startMs": 14000, "durationMs": 8000 }
+  ]
+}
+```
+
+`headTrimMs` lets you slice off a slow head in ffmpeg without re-running anything — every scene shifts automatically.
+
+Reading it in Remotion:
+```ts
+// src/timing.ts
+import markers from "../public/markers.json";
+
+const FPS = markers.fps;
+const msToFrames = (ms: number) => Math.round((ms - markers.headTrimMs) / 1000 * FPS);
+
+export const SCENE_TIMINGS = Object.fromEntries(
+  markers.scenes.map((s) => [
+    s.id,
+    { from: msToFrames(s.startMs), duration: msToFrames(s.startMs + s.durationMs) - msToFrames(s.startMs) },
+  ]),
+) as Record<string, { from: number; duration: number }>;
+```
+
+Then `<Sequence from={SCENE_TIMINGS.intro.from} durationInFrames={SCENE_TIMINGS.intro.duration}>` keeps working unchanged.
 
 ## Animations (Remotion rules)
 
@@ -239,6 +283,66 @@ A 60s video @ 30fps = 1800 frames. Each frame has Chromium render JSX → screen
 - `Config.setConcurrency(8)` — more parallelism
 - `--codec=h264-mkv` — faster than mp4
 - Drop heavy effects (blur, large box-shadows)
+
+## Live-URL digital zoom (no `useZoomScenes` hook)
+
+When you can't inject the keyboard zoom hook into the page (staging, prod, third-party), record raw at full viewport and add the cinematic zooms in Remotion instead. Quality holds up to ~2.5× on a 1920p source — past that, lossy artifacts start showing.
+
+Pattern: wrap `<OffthreadVideo>` in a div that animates `transform: scale(...) translate(...)` per scene.
+
+```tsx
+import { AbsoluteFill, Sequence, interpolate, staticFile, useCurrentFrame } from "remotion";
+import { OffthreadVideo } from "remotion";
+
+const ZoomedRecording: React.FC<{
+  scale: number;
+  ox: number; // origin x %, 0–100
+  oy: number; // origin y %, 0–100
+  duration: number;
+}> = ({ scale, ox, oy, duration }) => {
+  const frame = useCurrentFrame();
+  // Ease in over the first 18 frames (0.6s @ 30fps), hold, ease back near the end
+  const s = interpolate(
+    frame,
+    [0, 18, duration - 18, duration],
+    [1, scale, scale, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  return (
+    <AbsoluteFill style={{ overflow: "hidden" }}>
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          transform: `scale(${s})`,
+          transformOrigin: `${ox}% ${oy}%`,
+        }}
+      >
+        <OffthreadVideo
+          src={staticFile("recording.mp4")}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// In the composition, replace the plain <Video> with one ZoomedRecording per scene:
+<Sequence from={SCENE_TIMINGS.intro.from} durationInFrames={SCENE_TIMINGS.intro.duration}>
+  <ZoomedRecording scale={1.0} ox={50} oy={50} duration={SCENE_TIMINGS.intro.duration} />
+</Sequence>
+<Sequence from={SCENE_TIMINGS.kpiHighlight.from} durationInFrames={SCENE_TIMINGS.kpiHighlight.duration}>
+  <ZoomedRecording scale={2.0} ox={17} oy={2} duration={SCENE_TIMINGS.kpiHighlight.duration} />
+</Sequence>
+```
+
+Trade-offs vs the in-page hook:
+- ✅ Works on any URL, including ones you don't own
+- ✅ Same overlay/voiceover pipeline applies as-is
+- ❌ Pure digital zoom — no ground-truth pixel detail past the source resolution
+- ❌ You give up the camera-style CSS easing the in-page hook gets for free; mimic it with `Easing.bezier(0.25, 0.1, 0.25, 1)` in `interpolate`
+
+A ready-to-extend scene template is at `templates/scenes/SceneLiveZoom.tsx`.
 
 ## Iterating on overlays
 

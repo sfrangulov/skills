@@ -11,6 +11,21 @@ A headless Chromium opens the HTML/URL, waits for mount, presses keys in sequenc
 
 **Does not use** Screen Studio, OBS, native screen recording, or beauty cursor. This is just headless Chrome — Playwright captures the page's render directly, no UI overlays.
 
+## Reconnoiter the page first (Playwright MCP)
+
+Before writing a single line of recorder code, walk the live page through the Playwright MCP server. Click the same buttons the recorder will press, screenshot the resulting layouts, copy the actual selectors, and time how long each panel takes to fill with real data. Two reasons:
+
+1. **Selectors lie**. The thing you'd guess from the design (`.kpi-card`) is rarely what the code shipped (`[data-testid="metric-tile"]`). Twenty seconds in MCP saves three failed recordings.
+2. **Some drill-downs have no data**. Before spending 30 minutes waiting for a sparkline to render, confirm the row you're targeting actually has values. Empty states render fast and look terrible.
+
+Pattern: MCP-walk → write `SCENES` → write recorder → record. Skip the walk and you'll burn 2–3 iterations rediscovering this.
+
+## Open at the entry, not the deep link
+
+Tempting: `page.goto("/dashboard/fleet/alert/42")`. Result: a 60-second video that opens *inside* a feature, with no context.
+
+Better: `page.goto("/")` → click a nav item → click into the alert. Three extra seconds and the video reads as a guided tour instead of a hard cut. Voiceover gets a place to set up the "what is this product" line before the first KPI.
+
 ## Dependencies
 
 ```bash
@@ -128,6 +143,103 @@ await page.addStyleTag({ content: `.scene-hud { display: none !important; }` });
 
 Or leave it on as scene markers — `1` `2` `3` show up in the corner and help you align the voiceover in Audacity (visible on the timeline).
 
+## Waiting on real SPAs (the hard part)
+
+For static demo HTML you can get away with `page.goto(url, { waitUntil: "networkidle" })` + `waitForTimeout(3000)`. Real SPAs need a different strategy.
+
+### `networkidle` is a trap on chat / SSE / polling apps
+
+`networkidle` waits for 500ms of zero network activity. Chat sockets, server-sent events, telemetry, and 30-second polls never go quiet, so the wait either times out or returns at random when the network briefly stalls. Use:
+
+```ts
+await page.goto(url, { waitUntil: "commit" });   // just wait for the response headers
+// then explicitly wait for what you actually care about:
+await page.waitForFunction(
+  () => /3,06.*hours/.test(document.body.innerText),
+  null,
+  { timeout: 90000 },
+);
+```
+
+### Anchor on a value, not a heading
+
+Headings, nav labels and section titles render before the data — they're part of the skeleton. Wait for a substring of the **actual KPI value** ("3.06 hours", "$1,247", "95.2%"). When that string appears the panel is genuinely populated.
+
+### `page.waitForFunction` arg gotcha
+
+```ts
+// ❌ WRONG — { timeout } is treated as the predicate's input, default 30s applies
+await page.waitForFunction(fn, { timeout: 90000 });
+
+// ✅ RIGHT — arg goes second, options third
+await page.waitForFunction(fn, null, { timeout: 90000 });
+```
+
+This silently fails on every data-heavy page. The check passes locally where you've cached a build, then fails in CI / on cold renders. **Always pass `null` (or the real arg) as the second positional.**
+
+### Headless renders 5–10× slower than headed for KPI-heavy dashboards
+
+Same machine, same code, same network — pure rendering cost. Charts, virtualised tables, big data grids all take longer to paint when there's no display. Two strategies:
+
+1. **Bigger timeouts** — start at `90000` and raise as needed. Better than trying to "speed up the page".
+2. **Record everything and trim later** — give yourself a generous head buffer, write timestamps to `markers.json` (see below), and slice with `ffmpeg -ss` after the fact instead of fighting waits.
+
+### `storageState` doesn't warm React state
+
+A common (failed) optimization: log in once, save `storageState`, reuse across runs to "warm" the page. It works for cookies and localStorage, but the React app, the data fetch, the Suspense boundaries — all start cold every time you open a new context. There is no way to skip the first paint. Accept it and either trim the head in ffmpeg or include the load as a "loading…" beat in the video.
+
+### String-eval is forbidden inside `page.evaluate`
+
+Hardened sandboxes (and the Anthropic security hook) block dynamic-code constructors. Pass real closures only:
+
+```ts
+// ❌ Will be rejected
+await page.evaluate(`window.foo()`);
+
+// ✅ Works — real closure, captured from the outer scope
+const target = ".kpi-card";
+await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView(), target);
+```
+
+## Smooth scroll for hidden content
+
+SPAs often hide 70%+ of a page inside `overflow: auto` containers. Scrolling them by hand looks great on camera. Use the helper bundled in `templates/record-demo.ts`:
+
+```ts
+async function smoothScroll(page, selector, deltaY, durationMs) {
+  await page.evaluate(
+    ({ sel, dy, dur }) => new Promise<void>((resolve) => {
+      const el = document.querySelector(sel) as HTMLElement;
+      if (!el) return resolve();
+      const start = el.scrollTop;
+      const t0 = performance.now();
+      const tick = () => {
+        const t = Math.min(1, (performance.now() - t0) / dur);
+        el.scrollTop = start + dy * (1 - Math.cos(Math.PI * t)) / 2;
+        if (t < 1) requestAnimationFrame(tick);
+        else resolve();
+      };
+      requestAnimationFrame(tick);
+    }),
+    { sel: selector, dy: deltaY, dur: durationMs },
+  );
+}
+
+// usage
+await smoothScroll(page, ".right-panel", 600, 4000);
+```
+
+Cosine-eased, so the start and end feel like a camera move, not a `scrollTo`. A 4-second smooth scroll is itself a usable scene.
+
+## markers.json — single source of truth for timings
+
+Instead of hand-syncing `durationMs` in the recorder with `SCENE_TIMINGS` in Remotion, the recorder writes a `public/markers.json` with the actual timestamps of every scene boundary. Remotion reads it and derives all `from` / `durationInFrames` values. Two big wins:
+
+1. No drift between phase 3 and phase 4 — they share the same numbers.
+2. You can ship `headTrimMs` in the same file. Trim the boring head in ffmpeg, set `headTrimMs`, and every scene shifts automatically.
+
+See `templates/markers.json` for the schema and `rules/04` for how Remotion consumes it.
+
 ## Common issues
 
 ### `command not found: remotion`
@@ -135,7 +247,7 @@ Or leave it on as scene markers — `1` `2` `3` show up in the corner and help y
 
 ### Recording is empty / black
 - Check that `viewport` matches `recordVideo.size`
-- Make sure `await page.goto(...)` waited for `networkidle` (not `domcontentloaded`)
+- For static demo HTML, `waitUntil: "networkidle"` is fine; for live SPAs use `"commit"` + an explicit `waitForFunction` (see "Waiting on real SPAs" above)
 - Increase warmup to 5s for heavy pages with maps / charts
 
 ### Fonts look jagged
@@ -149,7 +261,7 @@ Run this after `goto`.
 The map renders incrementally. The first seconds of the recording will have white squares. Fixes:
 1. Increase warmup `waitForTimeout(5000)`
 2. Wait for a specific element: `await page.waitForSelector('.maplibregl-canvas')`
-3. Wait for network idle: `waitUntil: "networkidle"` is already set and helps
+3. Wait for an actual rendered tile via `waitForFunction` checking image counts inside the canvas wrapper
 
 ### TypeScript: `__dirname` undefined in ESM
 If the project is ESM (`"type": "module"` in `package.json`):
