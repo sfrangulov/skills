@@ -135,7 +135,17 @@ If you want your own voice in the video:
 3. Use the resulting voice ID like any other
 4. Clone quality depends on the sample — 30s minimum, 1–3 minutes ideal. Emotional range in the sample = more expressiveness in the TTS
 
-## Syncing with overlays
+## Two sync models — pick one
+
+How the video and the voiceover line up is a structural choice you should make BEFORE generating the audio:
+
+**A. Recording drives duration (default in this skill).** The Playwright recorder defines scene durations; voiceover is generated to fit those durations; if it overshoots you trim/setpts (rules/06). This is what the rest of this rule and our templates assume. Use it when the visual demo is the spine and the voice supports it.
+
+**B. Voiceover drives duration.** The voiceover script is generated first; Remotion sizes the composition to match the audio file; scene durations come from the voice timings, not the recorder. The official `remotion-best-practices` skill ships `voiceover.md` and `calculate-metadata.md` (already loaded as a companion) — they show the pattern: load the mp3 with `getAudioDuration`, return it from `calculateMetadata`, drop the audio in with `<Audio src={staticFile("voice.mp3")} />`. Use this when the script is fixed (executive review, regulatory), or when you'll regenerate the voice multiple times and don't want to edit recorder durations each time.
+
+You can't mix the two — pick at the start. Mixing produces drift in both directions and you spend the session chasing it.
+
+## Syncing with overlays (when recording drives duration)
 
 After generating the voiceover you may notice that:
 - Segment 4 is actually 16s, not 14s → the overlay ends before the words

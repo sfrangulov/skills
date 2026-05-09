@@ -220,6 +220,37 @@ const snappy = { damping: 20, stiffness: 200 }; // snappy UI
 const bouncy = { damping: 8 };                  // playful
 ```
 
+## Composition duration — derive it, don't hardcode it
+
+The Root.tsx template uses `calculateMetadata` to derive `durationInFrames` from `public/markers.json`. That kills the last hardcoded number in the project: re-record with a different scene mix → markers update → composition resizes automatically next render.
+
+```tsx
+import { Composition, type CalculateMetadataFunction } from "remotion";
+import markers from "../public/markers.json";
+
+const calculateMetadata: CalculateMetadataFunction<Record<string, unknown>> = async () => {
+  const visibleDurationMs = markers.totalDurationMs - markers.headTrimMs;
+  return {
+    durationInFrames: Math.ceil((visibleDurationMs / 1000) * markers.fps),
+    fps: markers.fps,
+  };
+};
+
+<Composition
+  id="DemoV1"
+  component={DemoComposition}
+  durationInFrames={1}        // overridden by calculateMetadata
+  fps={markers.fps}
+  width={1920}
+  height={1080}
+  calculateMetadata={calculateMetadata}
+/>
+```
+
+This is the official Remotion pattern — see `calculate-metadata.md` in the loaded `remotion-best-practices` companion skill for the full API. The pattern also lets you derive width/height/props dynamically — useful if you generate vertical (9:16) and horizontal (16:9) variants from the same composition.
+
+If you ever want **audio** to drive the duration instead of the recording (i.e. the final video is exactly as long as the voiceover), the `voiceover.md` rule in the same companion shows the pattern: load the mp3 with `getAudioDuration` and use it inside `calculateMetadata`. See rules/05 for when to pick that path.
+
 ## Sync overlays to in-scene actions, not to scene start
 
 A scene rarely shows a static frame for its full duration — it usually starts with a recorder action (scroll, click, tab switch) that takes 1–2 s to settle. If your overlay renders at frame 0 of the `<Sequence>`, it appears over the *unsettled* state and looks misaligned.
