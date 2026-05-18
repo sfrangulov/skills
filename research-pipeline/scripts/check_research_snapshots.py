@@ -125,6 +125,41 @@ def thin_snapshot_findings(manifest: list[sm.ManifestLine], cache_dir: Path,
     return out
 
 
+# v1.5: a doc that *declares* re-synthesis over an existing cache owes a
+# depth obligation (Stage 0): for load-bearing claims it must open the
+# deepest cached source AND re-run the adversarial pass as a *dispatched*
+# sub-agent, not an inline self-check. The same-URL thin-vs-heavy half is
+# v1.3's job (needs the index). What v1.3 cannot see is the declaration ->
+# obligation link: re-synthesis claimed, adversary only re-attacked inline.
+# A machine-readable `adversary-dispatch:` record is the deterministic
+# proof the dispatched pass happened; prose ("атакованы на опровержение")
+# is exactly the silent coarsening. Inert without the marker -> FP≈0.
+# [^.] (not [^.\n]) so a single declaration sentence still matches when
+# the doc is hard-wrapped across lines; the period bound keeps it inside
+# one sentence -> FP-tight.
+_RESYNTH = re.compile(
+    r"ре-?синтез[^.]{0,140}(?:снапшот|кэш|cache)|"
+    r"повторн\w*\s+fetch[^.]{0,100}не\s+выполн|"
+    r"re-?synth\w*[^.]{0,140}(?:cache|snapshot)|"
+    r"re-?fetch[^.]{0,80}(?:skip|not\s+perform)",
+    re.IGNORECASE)
+_ADV_DISPATCH = re.compile(r"(?mi)^\s*[-*]?\s*adversary-dispatch\s*:")
+
+
+def resynthesis_findings(doc_text: str, doc_name: str) -> list[str]:
+    if not _RESYNTH.search(doc_text):
+        return []                       # no re-synthesis claim -> inert
+    if _ADV_DISPATCH.search(doc_text):
+        return []                       # Stage-0 honest path: dispatch recorded
+    return [f"COVERAGE[research-snapshot]: {doc_name}:re-synthesis: "
+            f"re-synthesis over the cache declared but no machine-readable "
+            f"`adversary-dispatch:` record — load-bearing claims re-attacked "
+            f"inline (Stage 0: a dispatched adversary sub-agent or the "
+            f"deepest cached source is required, not an inline self-check) "
+            f"[add an `adversary-dispatch:` record or drop the "
+            f"re-synthesis claim]"]
+
+
 def extract_manifest(doc_text: str) -> list[sm.ManifestLine] | None:
     m = _BLOCK.search(doc_text)
     if not m:
@@ -168,6 +203,7 @@ def main(argv: list[str] | None = None) -> int:
              if (d := check_line(ml, Path(a.cache_dir), doc_path.name))]
     cover = manifest_findings(manifest, doc_text, doc_path.name, n_cited)
     cover += thin_snapshot_findings(manifest, Path(a.cache_dir), doc_path.name)
+    cover += resynthesis_findings(doc_text, doc_path.name)
     if (c := coverage_finding(doc_text, doc_path.name, n_cited)):
         cover.append(c)
     for line in (*drift, *cover):
