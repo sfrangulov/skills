@@ -71,6 +71,32 @@ accept. The
 manifest stores a bare `sha256`; the snapshot file on disk is `<sha256>.md`
 — do not hand-check the bare sha as a path, let the checker resolve it.
 
+## Enforcement (v1.4) — the gates run without you remembering
+
+The gates above are deterministic, but a gate you must remember to run is
+prose, not enforcement (the exact failure class v1.1 fixed for coverage).
+`scripts/check_all.py` is the single entrypoint: it **discovers** every doc
+carrying a `provenance-manifest` block and every subagent report under a
+root and runs both checkers on all of them — exit ≠ 0 if any artifact is
+flagged. No per-doc invocation, no agent memory.
+
+```bash
+python3 scripts/check_all.py --docs-dir docs/research \
+  --cache-dir ~/.cache/agent-research/snapshots [--reports-dir <dir>]
+```
+
+Wire it as a **Stop hook** so the harness — not you — runs it when the
+session ends. In Claude Code `settings.json`:
+
+```json
+{ "hooks": { "Stop": [ { "hooks": [ { "type": "command",
+  "command": "RESEARCH_DOCS_DIR=docs/research bash ~/.agents/skills/research-pipeline/hooks/research-gates-stop.sh" } ] } ] } }
+```
+
+A non-zero exit prints the flagged artifacts to stderr loudly. This is the
+layer that makes the whole pipeline *enforced, not emergent* at the
+orchestration boundary, not just within a doc you happened to check.
+
 ## Worked example (compressed)
 
 Task: "best practices for X, official first then community."
