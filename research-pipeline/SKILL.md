@@ -36,7 +36,7 @@ Research Progress:
 
 **Stage 0 — Justify.** Effort tier decided here, by you, not the subagent: fact = 1 agent / 3–10 calls; comparison = 2–4; complex = >10. If the value does not justify ~15× tokens, stop and answer directly.
 
-**Stage 1–2 — Orchestrate.** You are the lead and the main thread (subagents cannot spawn subagents). Give each subagent a structured task spec — see [references/subagent-spec.md](references/subagent-spec.md). Do not delegate effort sizing.
+**Stage 1–2 — Orchestrate.** You are the lead and the main thread (subagents cannot spawn subagents). Give each subagent a structured task spec — see [references/subagent-spec.md](references/subagent-spec.md). Do not delegate effort sizing. Validate every returned report with `python3 scripts/check_subagent_report.py` before synthesis — an empty or non-conforming Agent-tool return is otherwise silent; re-dispatch once, then fail loud.
 
 **Stage 3 — Source-discipline.** official/primary > authoritative-secondary > general. You never invent a URL; URLs come only from subagent notes.
 
@@ -94,6 +94,7 @@ These are the exact ways research silently degrades. If you catch yourself here,
 - "No counter-evidence turned up, so it's settled." → Absence of a counter-search ≠ absence of counter-evidence. The adversarial pass is mandatory, not conditional.
 - "All sources agree, I'll merge them into one clean statement." → If they genuinely disagree elsewhere, averaging hides it. Contradiction is a first-class output.
 - "Verbatim gate 10/10 PASS — clean headline." → 10/10 while 22 claims are cited is incomplete-verification-as-complete. Report `N/total cited` or disclose the sample. The checker now fails this as `COVERAGE`.
+- "A subagent came back — good, synthesize." → The Agent tool returns only a narration; an empty or schema-less return is invisible until it corrupts the synthesis. Run `check_subagent_report.py` on every return first.
 
 ## Rationalizations
 

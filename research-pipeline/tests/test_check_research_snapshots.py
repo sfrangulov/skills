@@ -129,6 +129,22 @@ def test_uncited_manifest_line_flagged(tmp_path, capsys):
     assert shas[2][:8] in out and "not cited" in out
 
 
+def test_cited_without_manifest_flagged(tmp_path, capsys):
+    """A claim footnotes [^h:sha8] but no manifest line backs it — canonized
+    without provenance (dangerous inverse of uncited-manifest)."""
+    cache = tmp_path / "cache"
+    shas = _shas(2, cache)
+    ghost = "deadbeefdeadbeef"                  # cited, never in manifest
+    body = (f"Cited: [^h:{shas[0][:8]}] and an unbacked claim [^h:{ghost[:8]}]")
+    doc = tmp_path / "r.md"
+    doc.write_text(_cited_doc([_line("A0", shas[0])], body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "COVERAGE[research-snapshot]" in out
+    assert ghost[:8] in out and "no manifest" in out
+
+
 def test_duplicate_claim_tag_flagged(tmp_path, capsys):
     """claim_tag must be unique within a manifest (minimal 'use it')."""
     cache = tmp_path / "cache"

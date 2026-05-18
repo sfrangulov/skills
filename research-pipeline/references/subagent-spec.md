@@ -11,7 +11,8 @@ OBJECTIVE: <one sentence; the question this subagent alone owns>
 SOURCE ALLOWLIST: <domains/source-classes it may use; official/primary first>
 TOOL ALLOWLIST: <e.g. WebSearch for discovery; defuddle/firecrawl for reading>
 OUTPUT SCHEMA (return exactly this):
-  - Sources: [{url, source_class: official|authoritative|general, opened: true|false}]
+  - Sources: [{url, source_class: official|authoritative|general, opened: true|false,
+      disposition: <required iff opened:false: escalated|dropped|weakened>}]
   - Findings: [{claim, source_url, verbatim_quote, locator}]
   - Deep-read notes: <what the opened sources actually say, in your words>
   - Gaps: <what you could not establish>
@@ -31,6 +32,11 @@ DEPTH: <DEEP = open and read sources verbatim | SCAN = triage only>
   fetch-contract (Stage 4) or being tagged `weakened` (Stage 6).
 - 3–5 subagents in parallel; dependent ones serial. Subagents do not spawn
   subagents — you (the lead, main thread) are the only orchestrator.
+- **Validate every returned report** (the Agent tool returns only a narrated
+  result — an empty or non-conforming return is otherwise invisible):
+  `python3 scripts/check_subagent_report.py < report`. Non-zero → re-dispatch
+  that subagent once, then fail loud. Never synthesize from an unvalidated
+  return.
 - The lead reads distilled notes, not raw search dumps (context hygiene).
 - The lead never invents a URL; URLs come only from subagent `Sources`.
 
