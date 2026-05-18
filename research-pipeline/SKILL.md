@@ -55,14 +55,17 @@ It prints the manifest TSV line. Collect every line for Stage 7. (Use
 
 **Stage 6 — Adversarial pass.** A separate sub-agent whose mandate is to *refute* each load-bearing claim. See [references/adversarial-protocol.md](references/adversarial-protocol.md). Output per claim: `survived | weakened | refuted` + epistemic tag.
 
-**Stage 7 — Canonize.** Only `survived`/`weakened` claims enter the document. `refuted` → drop, or reframe as an explicit open contradiction (never silently average). End the document with a fenced ` ```provenance-manifest ` block of the collected TSV lines; each canonized claim footnotes `[^h:<sha8>]`, not a bare URL. Verify with:
+**Stage 7 — Canonize.** Only `survived`/`weakened` claims enter the document. `refuted` → drop, or reframe as an explicit open contradiction (never silently average). End the document with a fenced ` ```provenance-manifest ` block of the collected TSV lines; each canonized claim footnotes `[^h:<sha8>]`, not a bare URL. The provenance summary reports verbatim coverage as `N/<total cited>` (or an explicit `K of M sampled`) — never `N/N` passed off as complete. `claim_tag` is unique per snapshot; every manifest line is cited. Verify with:
 
 ```bash
 python3 scripts/check_research_snapshots.py --doc <doc.md> \
   --cache-dir ~/.cache/agent-research/snapshots
 ```
 
-Exit 0 = clean. Report-only; external sources legitimately change. The
+Exit 0 = clean. `DRIFT` lines are advisory (sources legitimately change).
+`COVERAGE` lines are not — they catch incomplete-verification-as-complete
+(failure-class 5: overstated verbatim coverage, uncited manifest snapshot,
+duplicate `claim_tag`) and are author defects to fix, not accept. The
 manifest stores a bare `sha256`; the snapshot file on disk is `<sha256>.md`
 — do not hand-check the bare sha as a path, let the checker resolve it.
 
@@ -90,6 +93,7 @@ These are the exact ways research silently degrades. If you catch yourself here,
 - "I read it, I don't need to snapshot it." → Future-you on another machine has not read it. Snapshot or it didn't happen.
 - "No counter-evidence turned up, so it's settled." → Absence of a counter-search ≠ absence of counter-evidence. The adversarial pass is mandatory, not conditional.
 - "All sources agree, I'll merge them into one clean statement." → If they genuinely disagree elsewhere, averaging hides it. Contradiction is a first-class output.
+- "Verbatim gate 10/10 PASS — clean headline." → 10/10 while 22 claims are cited is incomplete-verification-as-complete. Report `N/total cited` or disclose the sample. The checker now fails this as `COVERAGE`.
 
 ## Rationalizations
 
@@ -100,3 +104,4 @@ These are the exact ways research silently degrades. If you catch yourself here,
 | "The snippet claim is low-stakes" | If it is low-stakes, dropping it costs nothing. If it is load-bearing, it must survive the funnel. Either way it does not get a free pass. |
 | "Re-running the adversarial pass is expensive" | Confirmation bias from a single synthesizer is more expensive — it ships wrong claims that look complete. |
 | "The checker is report-only so I can skip it" | Report-only means it does not block — not that you skip it. A clean exit 0 is the cheap proof the doc is reproducible. |
+| "10/10 PASS reads cleaner than 10/22" | Clean ≠ honest. The denominator is the cited universe, not what you bothered to check. `COVERAGE` flags the gap; the cleaner number is the false one. |
