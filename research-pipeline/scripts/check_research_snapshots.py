@@ -73,7 +73,7 @@ def manifest_findings(manifest: list[sm.ManifestLine], doc_text: str,
             out.append(f"COVERAGE[research-snapshot]: {doc_name}:tag={tag}: "
                        f"claim_tag repeated {c}x in manifest "
                        f"[claim_tag must be unique per snapshot]")
-    if n_cited > 0:                        # uncited check needs the convention
+    if n_cited > 0:                        # both directions need the convention
         toks = cited_sha_tokens(doc_text)
         for ml in manifest:
             if not any(ml.sha256.startswith(t) for t in toks):
@@ -81,6 +81,12 @@ def manifest_findings(manifest: list[sm.ManifestLine], doc_text: str,
                            f"{doc_name}:{ml.sha256[:8]}: manifest snapshot not "
                            f"cited in body [drop the snapshot or cite it "
                            f"[^h:{ml.sha256[:8]}]]")
+        for t in sorted(toks):
+            if not any(ml.sha256.startswith(t) for ml in manifest):
+                out.append(f"COVERAGE[research-snapshot]: {doc_name}:{t}: "
+                           f"cited [^h:{t}] has no manifest line — claim "
+                           f"canonized without provenance [snapshot the "
+                           f"source or drop the claim]")
     return out
 
 
