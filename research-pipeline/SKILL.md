@@ -135,3 +135,29 @@ These are the exact ways research silently degrades. If you catch yourself here,
 | "Re-running the adversarial pass is expensive" | Confirmation bias from a single synthesizer is more expensive — it ships wrong claims that look complete. |
 | "The checker is report-only so I can skip it" | Report-only means it does not block — not that you skip it. A clean exit 0 is the cheap proof the doc is reproducible. |
 | "10/10 PASS reads cleaner than 10/22" | Clean ≠ honest. The denominator is the cited universe, not what you bothered to check. `COVERAGE` flags the gap; the cleaner number is the false one. |
+
+## Known limitations (consciously accepted)
+
+**Different-URL depth selection has no hard gate.** The case "you cited the
+summary page of a *different* URL when a deeper report on the *same fact*
+was reachable" (e.g. an `edarabia` KHDA-rating blurb cited where the
+regulator's own inspection report would be the load-bearing source) is a
+research *judgment*, not a string property. Deciding "same subject,
+deeper source" honestly requires semantics; a pure-deterministic gate
+would either need a hand-maintained regulator-domain map or fire on every
+multi-page domain (high FP). Per the v1.1 lesson (s-ag3), a faked
+deterministic gate or an unverifiable prose rule is worse than an honest
+boundary — so this is **not** dressed up as a checker.
+
+What *does* mechanically backstop it: the v1.3 thin-snapshot gate (same
+URL, heavier capture uncited), the v1.5 re-synthesis gate (a declared
+re-synthesis must record a dispatched adversary, who counter-searches for
+the deeper source), and the mandatory Stage 6 adversarial pass for fresh
+research. The residual — fresh research, different URL, no re-synthesis
+declared — rests on Stage 0/Stage 6 discipline and the "snippet ≠ opened
+source" Red Flag.
+
+**Revisit trigger:** a *cheap discriminating* signal appears — e.g. a
+small regulator-domain allowlist mapping a subject's summary-URL to its
+report-URL — at which point this becomes an advisory `WARN` (FP tolerated,
+never a hard gate). Until then: accepted, documented, not silently open.
