@@ -355,3 +355,181 @@ def test_no_epistemic_tags_inert(tmp_path, capsys):
     out = capsys.readouterr().out
     assert rc == 0
     assert out == ""
+
+
+# --- v1.9: Stage -1 recon-manifest coverage gate -------------------------
+
+def _rline(material, url, source_class, freshness, why, verdict):
+    return "\t".join([material, url, source_class, freshness, why, verdict])
+
+
+def _recon_doc(prov_lines, recon_lines, body):
+    """Doc with BOTH a provenance-manifest and a recon-manifest block."""
+    prov = "\n".join(prov_lines)
+    recon = "\n".join(recon_lines)
+    return (f"# Doc\n\n{body}\n\n```provenance-manifest\n{prov}\n```\n\n"
+            f"```recon-manifest\n{recon}\n```\n")
+
+
+def test_recon_material_yes_empty_verdict_flagged(tmp_path, capsys):
+    """A material=yes source with no verdict_slot silently vanished."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = f"Finding [^h:{shas[0][:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_recon_doc(
+        [_line("c1", shas[0])],
+        [_rline("yes", "https://e.x/a", "official", "current", "core", "")],
+        body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "COVERAGE[research-snapshot]" in out and "recon" in out.lower()
+
+
+def test_recon_snapshotted_resolving_to_manifest_clean(tmp_path, capsys):
+    """verdict snapshotted:<sha> whose sha is in the provenance-manifest."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = f"Finding [^h:{shas[0][:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_recon_doc(
+        [_line("c1", shas[0])],
+        [_rline("yes", "https://e.x/a", "official", "current", "core",
+                f"snapshotted:{shas[0][:8]}")],
+        body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "recon" not in out.lower()
+
+
+def test_recon_snapshotted_without_provenance_flagged(tmp_path, capsys):
+    """Claims snapshotted:<sha> but no matching provenance-manifest line."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = f"Finding [^h:{shas[0][:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_recon_doc(
+        [_line("c1", shas[0])],
+        [_rline("yes", "https://e.x/a", "official", "current", "core",
+                "snapshotted:deadbeef")],
+        body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "COVERAGE[research-snapshot]" in out and "deadbeef" in out
+
+
+def test_recon_gap_weakened_accepted(tmp_path, capsys):
+    """An explicit gap:weakened verdict is machine-readable non-silence."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = f"Finding [^h:{shas[0][:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_recon_doc(
+        [_line("c1", shas[0])],
+        [_rline("yes", "https://e.x/deep", "official", "stale?",
+                "deeper src", "gap:weakened")],
+        body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "recon" not in out.lower()
+
+
+def test_recon_material_no_not_gated(tmp_path, capsys):
+    """material=no is judgment, not gated even with empty verdict."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = f"Finding [^h:{shas[0][:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_recon_doc(
+        [_line("c1", shas[0])],
+        [_rline("no", "https://e.x/bg", "general", "unknown", "bg", "")],
+        body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "recon" not in out.lower()
+
+
+def test_recon_invalid_verdict_flagged(tmp_path, capsys):
+    """A verdict_slot outside the allowed vocabulary is a defect."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = f"Finding [^h:{shas[0][:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_recon_doc(
+        [_line("c1", shas[0])],
+        [_rline("yes", "https://e.x/a", "official", "current", "core",
+                "maybe-later")],
+        body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "COVERAGE[research-snapshot]" in out and "recon" in out.lower()
+
+
+def test_recon_malformed_line_flagged(tmp_path, capsys):
+    """A recon line without exactly 6 tab fields is malformed."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = f"Finding [^h:{shas[0][:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_recon_doc(
+        [_line("c1", shas[0])],
+        ["yes\thttps://e.x/a\tofficial\tcurrent"],   # only 4 fields
+        body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "COVERAGE[research-snapshot]" in out and "recon" in out.lower()
+
+
+def test_recon_preamble_comments_ignored(tmp_path, capsys):
+    """`#` preamble lines (recorded -1a assumptions) are not data rows."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = f"Finding [^h:{shas[0][:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_recon_doc(
+        [_line("c1", shas[0])],
+        ["# -1a assumptions: user unavailable; scope=official only",
+         _rline("yes", "https://e.x/a", "official", "current", "core",
+                f"snapshotted:{shas[0][:8]}")],
+        body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "recon" not in out.lower()
+
+
+def test_recon_gap_dropped_accepted(tmp_path, capsys):
+    """gap:dropped is the other accepted explicit non-silence verdict."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = f"Finding [^h:{shas[0][:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_recon_doc(
+        [_line("c1", shas[0])],
+        [_rline("yes", "https://e.x/x", "official", "unknown",
+                "dropped src", "gap:dropped")],
+        body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "recon" not in out.lower()
+
+
+def test_no_recon_block_inert(tmp_path, capsys):
+    """No recon-manifest block -> gate silent (FP≈0, backward compatible)."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = f"Finding [^h:{shas[0][:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_cited_doc([_line("c1", shas[0])], body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "recon" not in out.lower()

@@ -69,7 +69,9 @@ Exit 0 = clean. `DRIFT` lines are advisory (sources legitimately change).
 `COVERAGE` lines are not — they catch incomplete-verification-as-complete
 (failure-class 5: overstated verbatim coverage, uncited manifest snapshot,
 duplicate `claim_tag`, or a thin snapshot cited while a heavier capture of
-the same URL sits uncited in the cache) and are author defects to fix, not
+the same URL sits uncited in the cache, or a recon-manifest `material=yes`
+source with no `snapshotted:<sha>`/`gap:weakened`/`gap:dropped` verdict)
+and are author defects to fix, not
 accept. The
 manifest stores a bare `sha256`; the snapshot file on disk is `<sha256>.md`
 — do not hand-check the bare sha as a path, let the checker resolve it.
