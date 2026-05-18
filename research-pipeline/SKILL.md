@@ -24,6 +24,7 @@ Copy this checklist into your working notes and check off as you go:
 
 ```
 Research Progress:
+- [ ] -1. Reconnaissance: scope (≤3 Qs, gap-driven) + source-triage → recon-manifest
 - [ ] 0. Justify the fan-out (effort tier; ~15x token cost vs single agent)
 - [ ] 1. Lead plans: effort tier + per-subagent structured spec
 - [ ] 2. Dispatch 3-5 subagents (parallel; dependent ones serial)
