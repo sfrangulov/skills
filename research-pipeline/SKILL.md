@@ -24,6 +24,7 @@ Copy this checklist into your working notes and check off as you go:
 
 ```
 Research Progress:
+- [ ] -1. Reconnaissance: scope (≤3 Qs, gap-driven) + source-triage → recon-manifest
 - [ ] 0. Justify the fan-out (effort tier; ~15x token cost vs single agent)
 - [ ] 1. Lead plans: effort tier + per-subagent structured spec
 - [ ] 2. Dispatch 3-5 subagents (parallel; dependent ones serial)
@@ -34,7 +35,9 @@ Research Progress:
 - [ ] 7. Canonize: only survived/weakened; emit provenance-manifest block
 ```
 
-**Stage 0 — Justify.** Effort tier decided here, by you, not the subagent: fact = 1 agent / 3–10 calls; comparison = 2–4; complex = >10. If the value does not justify ~15× tokens, stop and answer directly. **Re-synthesis over an existing cache** (re-scope, translate) is legitimate and proportionate — but for each *load-bearing* claim it must open the deepest cached source for that fact (the regulator report, not just the summary page) and re-run the adversarial pass as a dispatched sub-agent, not a quick inline self-check. An inline re-attack silently coarsens load-bearing findings. When you declare re-synthesis, record the dispatched pass machine-readably — a line `adversary-dispatch: subagent=<id> report=<sha8> verdict=<survived|weakened|refuted>`. The v1.5 gate flags a doc that declares re-synthesis but carries no such record (prose like "claims were attacked" is exactly the inline coarsening); inert without the declaration → FP≈0.
+**Stage -1 — Reconnaissance.** Before sizing effort, the lead scopes and triages. **-1a (gap-driven, ≤3 questions):** reconcile the request against objective · scope · freshness horizon · project-payload; ask only what is missing, or 0 questions if already specified or the user is unavailable (record derived assumptions explicitly). **-1b (autonomous):** triage the source landscape and emit a ` ```recon-manifest ` block (one TSV line per source: `material`, `url`, `source_class`, `freshness`, `why`, `verdict_slot`). See [references/recon-protocol.md](references/recon-protocol.md). This is what re-introduces freshness and personalization as *contracted* inputs, honestly tagged, without weakening the verbatim canon.
+
+**Stage 0 — Justify.** Effort tier decided here, by you (not the subagent), from the Stage -1 recon output: fact = 1 agent / 3–10 calls; comparison = 2–4; complex = >10. If the value does not justify ~15× tokens, stop and answer directly. **Re-synthesis over an existing cache** (re-scope, translate) is legitimate and proportionate — but for each *load-bearing* claim it must open the deepest cached source for that fact (the regulator report, not just the summary page) and re-run the adversarial pass as a dispatched sub-agent, not a quick inline self-check. An inline re-attack silently coarsens load-bearing findings. When you declare re-synthesis, record the dispatched pass machine-readably — a line `adversary-dispatch: subagent=<id> report=<sha8> verdict=<survived|weakened|refuted>`. The v1.5 gate flags a doc that declares re-synthesis but carries no such record (prose like "claims were attacked" is exactly the inline coarsening); inert without the declaration → FP≈0.
 
 **Stage 1–2 — Orchestrate.** You are the lead and the main thread (subagents cannot spawn subagents). Give each subagent a structured task spec — see [references/subagent-spec.md](references/subagent-spec.md). Do not delegate effort sizing. Validate every returned report with `python3 scripts/check_subagent_report.py` before synthesis — an empty or non-conforming Agent-tool return is otherwise silent; re-dispatch once, then fail loud.
 
@@ -53,7 +56,7 @@ It prints the manifest TSV line. Collect every line for Stage 7. (Use
 
 **Stage 5 — Verification funnel.** Deterministic gates first (URL resolves, allowlist, verbatim substring, token co-occurrence), LLM-judge only on the flagged remainder, run by an independent verifier. See [references/verification-funnel.md](references/verification-funnel.md).
 
-**Stage 6 — Adversarial pass.** A separate sub-agent whose mandate is to *refute* each load-bearing claim. See [references/adversarial-protocol.md](references/adversarial-protocol.md). Output per claim: `survived | weakened | refuted` + epistemic-status tag `[class, verified?, verdict]`. The v1.8 backstop fails `COVERAGE` if a `refuted` claim is canonized normally or an epistemic tag's verdict is malformed.
+**Stage 6 — Adversarial pass.** A separate sub-agent whose mandate is to *refute* each load-bearing claim. See [references/adversarial-protocol.md](references/adversarial-protocol.md). Output per claim: `survived | weakened | refuted` + epistemic-status tag `[class, verified?, verdict]`. The v1.8 backstop fails `COVERAGE` if a `refuted` claim is canonized normally or an epistemic tag's verdict is malformed. For every recon-manifest source tagged `freshness=stale?`, the adversary must check whether a newer official version supersedes the claim and, if so, tag it `weakened [superseded-by <version>]` rather than a silently stale `survived`.
 
 **Stage 7 — Canonize.** Only `survived`/`weakened` claims enter the document. `refuted` → drop, or reframe as an explicit open contradiction (never silently average). End the document with a fenced ` ```provenance-manifest ` block of the collected TSV lines; each canonized claim footnotes `[^h:<sha8>]`, not a bare URL. The provenance summary reports verbatim coverage as `N/<total cited>` (or an explicit `K of M sampled`) — never `N/N` passed off as complete. `claim_tag` is unique per snapshot; every manifest line is cited. Verify with:
 
@@ -106,6 +109,7 @@ Lead → tier=comparison, 3 subagents (official-docs / engineering-blogs / count
 
 Read the one you need; all are one level deep from here:
 
+- [references/recon-protocol.md](references/recon-protocol.md) — Stage -1 scoping checklist + source-triage + recon-manifest schema
 - [references/subagent-spec.md](references/subagent-spec.md) — Stage 1–2 structured task-spec template
 - [references/fetch-contract.md](references/fetch-contract.md) — Stage 4 fetch-escalation tiers; WebFetch is barred as a verbatim tier
 - [references/verification-funnel.md](references/verification-funnel.md) — Stage 5 deterministic gates → judge → verifier verdicts
@@ -124,6 +128,7 @@ These are the exact ways research silently degrades. If you catch yourself here,
 - "Verbatim gate 10/10 PASS — clean headline." → 10/10 while 22 claims are cited is incomplete-verification-as-complete. Report `N/total cited` or disclose the sample. The checker now fails this as `COVERAGE`.
 - "A subagent came back — good, synthesize." → The Agent tool returns only a narration; an empty or schema-less return is invisible until it corrupts the synthesis. Run `check_subagent_report.py` on every return first.
 - "It's just a re-scope over cached snapshots, I'll re-attack the claims inline." → Inline re-attack is shallower than the dispatched adversary that first found the nuance; load-bearing findings coarsen silently. Open the deepest cached source and dispatch the adversary for load-bearing claims.
+- "I'll just use whatever sources I already have." → Skipping Stage -1 lets freshness and personalization get optimized away silently. Run recon; a `material=yes` source that never reaches a snapshot must be tagged `gap:weakened`, not dropped.
 
 ## Rationalizations
 
