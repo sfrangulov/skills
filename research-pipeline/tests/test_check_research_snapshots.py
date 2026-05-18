@@ -505,6 +505,23 @@ def test_recon_preamble_comments_ignored(tmp_path, capsys):
     assert "recon" not in out.lower()
 
 
+def test_recon_gap_dropped_accepted(tmp_path, capsys):
+    """gap:dropped is the other accepted explicit non-silence verdict."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = f"Finding [^h:{shas[0][:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_recon_doc(
+        [_line("c1", shas[0])],
+        [_rline("yes", "https://e.x/x", "official", "unknown",
+                "dropped src", "gap:dropped")],
+        body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "recon" not in out.lower()
+
+
 def test_no_recon_block_inert(tmp_path, capsys):
     """No recon-manifest block -> gate silent (FP≈0, backward compatible)."""
     cache = tmp_path / "cache"

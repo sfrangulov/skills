@@ -220,7 +220,7 @@ def recon_findings(doc_text: str, manifest: list[sm.ManifestLine] | None,
         ln = raw.strip()
         if not ln or ln.startswith("#"):            # preamble / blank
             continue
-        parts = raw.split("\t")
+        parts = raw.split("\t")   # split RAW; fields are .strip()-ed below
         if len(parts) != 6:
             out.append(f"COVERAGE[research-snapshot]: {doc_name}:recon: "
                        f"recon-manifest line has {len(parts)} tab fields, "
@@ -239,7 +239,7 @@ def recon_findings(doc_text: str, manifest: list[sm.ManifestLine] | None,
             sha = verdict.split(":", 1)[1]
             if not sha or not any(p.startswith(sha) for p in prov_shas):
                 out.append(f"COVERAGE[research-snapshot]: {doc_name}:recon="
-                           f"{url}: verdict snapshotted:{sha} has no "
+                           f"{url}: verdict snapshotted:{sha or '∅'} has no "
                            f"matching provenance-manifest entry [snapshot "
                            f"the source and cite it, or tag gap:weakened]")
         elif verdict not in _RECON_OK_GAP:
