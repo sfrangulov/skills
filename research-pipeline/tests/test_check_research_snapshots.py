@@ -295,3 +295,63 @@ def test_real_choueifat_resynthesis_case_flagged(tmp_path, capsys):
     out = capsys.readouterr().out
     assert rc == 1
     assert "COVERAGE[research-snapshot]" in out and "re-synthesis" in out
+
+
+# --- v1.8: adversarial canonization backstop -----------------------------
+
+def test_refuted_epistemic_tag_on_canonized_claim_flagged(tmp_path, capsys):
+    """A claim carrying a `refuted` epistemic-status tag is still in the
+    doc as a normal claim — Stage 6 says drop it or reframe as an explicit
+    open contradiction, never carry it canonized."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = ("SABIS audits its own exam results "
+            "[secondary, verified, refuted] [^h:%s]" % shas[0][:8])
+    doc = tmp_path / "r.md"
+    doc.write_text(_cited_doc([_line("c1", shas[0])], body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "COVERAGE[research-snapshot]" in out and "refuted" in out
+
+
+def test_survived_and_weakened_tags_not_flagged(tmp_path, capsys):
+    cache = tmp_path / "cache"
+    shas = _shas(2, cache)
+    body = ("Founded 1993 [primary, verified, survived] [^h:%s]\n"
+            "Network size [secondary, unverified, weakened] [^h:%s]"
+            % (shas[0][:8], shas[1][:8]))
+    doc = tmp_path / "r.md"
+    doc.write_text(_cited_doc([_line("c1", shas[0]), _line("c2", shas[1])],
+                              body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "refuted" not in out
+
+
+def test_malformed_epistemic_verdict_flagged(tmp_path, capsys):
+    """An epistemic-shaped tag whose verdict token is not in the
+    vocabulary -> the adversarial verdict silently did not happen."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = "Claim [primary, verified, checked] [^h:%s]" % shas[0][:8]
+    doc = tmp_path / "r.md"
+    doc.write_text(_cited_doc([_line("c1", shas[0])], body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "COVERAGE[research-snapshot]" in out and "epistemic" in out.lower()
+
+
+def test_no_epistemic_tags_inert(tmp_path, capsys):
+    """Docs not using the epistemic-status convention are unaffected."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = "A plain finding with no epistemic tag [^h:%s]" % shas[0][:8]
+    doc = tmp_path / "r.md"
+    doc.write_text(_cited_doc([_line("c1", shas[0])], body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert out == ""

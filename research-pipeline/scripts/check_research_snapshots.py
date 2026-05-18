@@ -160,6 +160,43 @@ def resynthesis_findings(doc_text: str, doc_name: str) -> list[str]:
             f"re-synthesis claim]"]
 
 
+# v1.8 (s-pos): the Stage 6 adversarial pass emits a machine-readable
+# epistemic-status tag per load-bearing claim: [class, verified?, verdict].
+# The protocol is prose in adversarial-protocol.md; this is its mechanical
+# canonization backstop. Deciding *which* claims are load-bearing is a
+# judgment (see Known limitations) and is NOT gated. What is mechanical:
+# a `refuted` claim must never be carried as a normal canonized claim
+# (Stage 6: drop it or reframe as an explicit open contradiction), and an
+# epistemic-shaped tag whose verdict is outside the vocabulary means the
+# adversarial verdict silently did not happen. Inert with no tag -> FP≈0.
+_EPISTEMIC = re.compile(
+    r"\[\s*(?:primary|secondary|inferred)\s*,\s*[^\],]*?\s*,\s*"
+    r"([A-Za-zА-Яа-я?]+)\s*\]")
+_VERDICTS = {"survived", "weakened", "refuted"}
+
+
+def epistemic_findings(doc_text: str, doc_name: str) -> list[str]:
+    out: list[str] = []
+    bad: set[str] = set()
+    for v in _EPISTEMIC.findall(doc_text):
+        vl = v.lower()
+        if vl == "refuted":
+            out.append(f"COVERAGE[research-snapshot]: {doc_name}:"
+                       f"epistemic=refuted: a `refuted` claim is canonized "
+                       f"as a normal claim [Stage 6: drop it or reframe as "
+                       f"an explicit open contradiction — never carry "
+                       f"refuted]")
+        elif vl not in _VERDICTS:
+            bad.add(v)
+    for v in sorted(bad):
+        out.append(f"COVERAGE[research-snapshot]: {doc_name}:"
+                   f"epistemic={v}: epistemic-status tag verdict not in "
+                   f"{{survived|weakened|refuted}} — the adversarial pass "
+                   f"verdict is malformed/absent [run Stage 6 and tag the "
+                   f"claim with a valid verdict]")
+    return out
+
+
 def extract_manifest(doc_text: str) -> list[sm.ManifestLine] | None:
     m = _BLOCK.search(doc_text)
     if not m:
@@ -204,6 +241,7 @@ def main(argv: list[str] | None = None) -> int:
     cover = manifest_findings(manifest, doc_text, doc_path.name, n_cited)
     cover += thin_snapshot_findings(manifest, Path(a.cache_dir), doc_path.name)
     cover += resynthesis_findings(doc_text, doc_path.name)
+    cover += epistemic_findings(doc_text, doc_path.name)
     if (c := coverage_finding(doc_text, doc_path.name, n_cited)):
         cover.append(c)
     for line in (*drift, *cover):
