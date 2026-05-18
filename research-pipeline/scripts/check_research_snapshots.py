@@ -203,7 +203,8 @@ def epistemic_findings(doc_text: str, doc_name: str) -> list[str]:
 # (sha resolving to a provenance-manifest entry) or an explicit
 # `gap:weakened` / `gap:dropped`. material=no and the source_class /
 # freshness / why fields are judgment and deliberately NOT gated (the
-# s-zvs honest-boundary lesson). Inert with no recon-manifest -> FP≈0.
+# honest-boundary lesson — see SKILL.md "Known limitations"). Inert
+# with no recon-manifest -> FP≈0.
 _RECON = re.compile(r"```recon-manifest\n(.*?)\n```", re.DOTALL)
 _RECON_OK_GAP = {"gap:weakened", "gap:dropped"}
 
