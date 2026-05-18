@@ -109,6 +109,7 @@ Lead → tier=comparison, 3 subagents (official-docs / engineering-blogs / count
 
 Read the one you need; all are one level deep from here:
 
+- [references/recon-protocol.md](references/recon-protocol.md) — Stage -1 scoping checklist + source-triage + recon-manifest schema
 - [references/subagent-spec.md](references/subagent-spec.md) — Stage 1–2 structured task-spec template
 - [references/fetch-contract.md](references/fetch-contract.md) — Stage 4 fetch-escalation tiers; WebFetch is barred as a verbatim tier
 - [references/verification-funnel.md](references/verification-funnel.md) — Stage 5 deterministic gates → judge → verifier verdicts
@@ -127,6 +128,7 @@ These are the exact ways research silently degrades. If you catch yourself here,
 - "Verbatim gate 10/10 PASS — clean headline." → 10/10 while 22 claims are cited is incomplete-verification-as-complete. Report `N/total cited` or disclose the sample. The checker now fails this as `COVERAGE`.
 - "A subagent came back — good, synthesize." → The Agent tool returns only a narration; an empty or schema-less return is invisible until it corrupts the synthesis. Run `check_subagent_report.py` on every return first.
 - "It's just a re-scope over cached snapshots, I'll re-attack the claims inline." → Inline re-attack is shallower than the dispatched adversary that first found the nuance; load-bearing findings coarsen silently. Open the deepest cached source and dispatch the adversary for load-bearing claims.
+- "I'll just use whatever sources I already have." → Skipping Stage -1 lets freshness and personalization get optimized away silently. Run recon; a `material=yes` source that never reaches a snapshot must be tagged `gap:weakened`, not dropped.
 
 ## Rationalizations
 
