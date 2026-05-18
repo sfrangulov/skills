@@ -56,11 +56,51 @@ def _utc_iso_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+INDEX_NAME = "index.tsv"
+
+
+@dataclass(frozen=True)
+class IndexEntry:
+    sha256: str
+    bytes: int
+    url: str
+    retrieved_at: str
+
+
+def read_index(cache_dir: Path) -> list[IndexEntry]:
+    """Persistent sha<->url<->bytes index; [] if absent (legacy cache)."""
+    path = Path(cache_dir) / INDEX_NAME
+    if not path.exists():
+        return []
+    out: list[IndexEntry] = []
+    for ln in path.read_text(encoding="utf-8").splitlines():
+        if not ln.strip():
+            continue
+        sha, b, url, ts = ln.split("\t")
+        out.append(IndexEntry(sha, int(b), url, ts))
+    return out
+
+
+def update_index(cache_dir: Path, sha256: str, nbytes: int, url: str,
+                  retrieved_at: str) -> None:
+    """Append one row per distinct sha (content-addressed -> idempotent)."""
+    cache_dir = Path(cache_dir)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    if any(e.sha256 == sha256 for e in read_index(cache_dir)):
+        return
+    for v in (sha256, url, retrieved_at):
+        if "\t" in v or "\n" in v:
+            raise ValueError(f"index field must not contain tab/newline: {v!r}")
+    with (cache_dir / INDEX_NAME).open("a", encoding="utf-8") as f:
+        f.write(f"{sha256}\t{nbytes}\t{url}\t{retrieved_at}\n")
+
+
 def record(body: str, *, claim_tag: str, url: str, tool: str, locator: str,
            cache_dir: Path, retrieved_at: str | None = None) -> str:
     sha = write_snapshot(body, cache_dir)
-    return manifest_line(claim_tag, url, sha,
-                         retrieved_at or _utc_iso_now(), tool, locator)
+    ts = retrieved_at or _utc_iso_now()
+    update_index(cache_dir, sha, len(body.encode("utf-8")), url, ts)
+    return manifest_line(claim_tag, url, sha, ts, tool, locator)
 
 
 def main(argv: list[str] | None = None) -> int:
