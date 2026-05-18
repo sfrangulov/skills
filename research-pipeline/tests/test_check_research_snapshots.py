@@ -145,6 +145,61 @@ def test_cited_without_manifest_flagged(tmp_path, capsys):
     assert ghost[:8] in out and "no manifest" in out
 
 
+def test_thin_snapshot_when_heavier_same_url_in_cache_flagged(tmp_path, capsys):
+    """Re-synthesis cited the light capture of a URL while a much heavier
+    capture of the SAME URL sits uncited in the cache index (v1.3)."""
+    cache = tmp_path / "cache"
+    url = "https://reg.example/inspection-report?id=220"
+    thin = sm.parse_manifest_line(sm.record(
+        "Overall: Acceptable.", claim_tag="c1", url=url, tool="defuddle",
+        locator="-", cache_dir=cache,
+        retrieved_at="2026-05-17T00:00:00+00:00")).sha256
+    sm.record("Year-by-year: 2008-09 Good, 2009-10 Good, 2010-11 Acceptable "
+              * 80, claim_tag="c2", url=url, tool="curl+pdftotext",
+              locator="-", cache_dir=cache,
+              retrieved_at="2026-05-17T01:00:00+00:00")
+    body = f"The rating is Acceptable.[^h:{thin[:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_cited_doc([_line("c1", thin)], body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "COVERAGE[research-snapshot]" in out
+    assert thin[:8] in out and "heavier" in out
+
+
+def test_cited_heaviest_snapshot_not_flagged(tmp_path, capsys):
+    """Citing the heaviest capture of a URL must not trip the v1.3 gate."""
+    cache = tmp_path / "cache"
+    url = "https://reg.example/r?id=1"
+    heavy = sm.parse_manifest_line(sm.record(
+        "deep inspection report " * 200, claim_tag="c1", url=url,
+        tool="curl", locator="-", cache_dir=cache,
+        retrieved_at="2026-05-17T00:00:00+00:00")).sha256
+    sm.record("short summary", claim_tag="c2", url=url, tool="defuddle",
+              locator="-", cache_dir=cache,
+              retrieved_at="2026-05-17T01:00:00+00:00")
+    body = f"Detail from the deep report.[^h:{heavy[:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_cited_doc([_line("c1", heavy)], body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert "heavier" not in out and rc == 0
+
+
+def test_no_index_means_thin_gate_inert(tmp_path, capsys):
+    """Legacy cache with no index.tsv -> v1.3 gate stays silent (FP≈0)."""
+    cache = tmp_path / "cache"
+    shas = _shas(2, cache)                      # write_snapshot, no index.tsv
+    body = f"Cited [^h:{shas[0][:8]}] [^h:{shas[1][:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_cited_doc([_line("c1", shas[0]), _line("c2", shas[1])],
+                              body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert "heavier" not in out and rc == 0
+
+
 def test_duplicate_claim_tag_flagged(tmp_path, capsys):
     """claim_tag must be unique within a manifest (minimal 'use it')."""
     cache = tmp_path / "cache"

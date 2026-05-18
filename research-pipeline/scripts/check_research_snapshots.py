@@ -90,6 +90,41 @@ def manifest_findings(manifest: list[sm.ManifestLine], doc_text: str,
     return out
 
 
+def thin_snapshot_findings(manifest: list[sm.ManifestLine], cache_dir: Path,
+                           doc_name: str) -> list[str]:
+    """A cited snapshot is the thin capture of its URL while a much heavier
+    capture of the SAME URL sits uncited in the cache index (re-synthesis
+    leaning on the light page instead of the deep source). Inert with no
+    index (legacy cache) -> FP≈0."""
+    idx = sm.read_index(cache_dir)
+    if not idx:
+        return []
+    by_sha = {e.sha256: e for e in idx}
+    by_url: dict[str, list] = {}
+    for e in idx:
+        by_url.setdefault(e.url, []).append(e)
+    cited = {ml.sha256 for ml in manifest}
+    out, seen = [], set()
+    for ml in manifest:
+        if ml.sha256 in seen:
+            continue
+        seen.add(ml.sha256)
+        e = by_sha.get(ml.sha256)
+        if not e:
+            continue
+        heavy = max(by_url[e.url], key=lambda x: x.bytes)
+        if (heavy.sha256 != e.sha256 and heavy.sha256 not in cited
+                and heavy.bytes >= 1.5 * e.bytes
+                and heavy.bytes - e.bytes >= 2000):
+            out.append(
+                f"COVERAGE[research-snapshot]: {doc_name}:{e.sha256[:8]}: "
+                f"thinner snapshot cited ({e.bytes}B) — cache has a heavier "
+                f"capture {heavy.sha256[:8]} ({heavy.bytes}B, "
+                f"~{heavy.bytes / e.bytes:.1f}x) of the same URL, not cited "
+                f"[open the deeper capture or justify the thin one]")
+    return out
+
+
 def extract_manifest(doc_text: str) -> list[sm.ManifestLine] | None:
     m = _BLOCK.search(doc_text)
     if not m:
@@ -132,6 +167,7 @@ def main(argv: list[str] | None = None) -> int:
     drift = [d for ml in manifest
              if (d := check_line(ml, Path(a.cache_dir), doc_path.name))]
     cover = manifest_findings(manifest, doc_text, doc_path.name, n_cited)
+    cover += thin_snapshot_findings(manifest, Path(a.cache_dir), doc_path.name)
     if (c := coverage_finding(doc_text, doc_path.name, n_cited)):
         cover.append(c)
     for line in (*drift, *cover):

@@ -34,7 +34,7 @@ Research Progress:
 - [ ] 7. Canonize: only survived/weakened; emit provenance-manifest block
 ```
 
-**Stage 0 — Justify.** Effort tier decided here, by you, not the subagent: fact = 1 agent / 3–10 calls; comparison = 2–4; complex = >10. If the value does not justify ~15× tokens, stop and answer directly.
+**Stage 0 — Justify.** Effort tier decided here, by you, not the subagent: fact = 1 agent / 3–10 calls; comparison = 2–4; complex = >10. If the value does not justify ~15× tokens, stop and answer directly. **Re-synthesis over an existing cache** (re-scope, translate) is legitimate and proportionate — but for each *load-bearing* claim it must open the deepest cached source for that fact (the regulator report, not just the summary page) and re-run the adversarial pass as a dispatched sub-agent, not a quick inline self-check. An inline re-attack silently coarsens load-bearing findings.
 
 **Stage 1–2 — Orchestrate.** You are the lead and the main thread (subagents cannot spawn subagents). Give each subagent a structured task spec — see [references/subagent-spec.md](references/subagent-spec.md). Do not delegate effort sizing. Validate every returned report with `python3 scripts/check_subagent_report.py` before synthesis — an empty or non-conforming Agent-tool return is otherwise silent; re-dispatch once, then fail loud.
 
@@ -65,7 +65,9 @@ python3 scripts/check_research_snapshots.py --doc <doc.md> \
 Exit 0 = clean. `DRIFT` lines are advisory (sources legitimately change).
 `COVERAGE` lines are not — they catch incomplete-verification-as-complete
 (failure-class 5: overstated verbatim coverage, uncited manifest snapshot,
-duplicate `claim_tag`) and are author defects to fix, not accept. The
+duplicate `claim_tag`, or a thin snapshot cited while a heavier capture of
+the same URL sits uncited in the cache) and are author defects to fix, not
+accept. The
 manifest stores a bare `sha256`; the snapshot file on disk is `<sha256>.md`
 — do not hand-check the bare sha as a path, let the checker resolve it.
 
@@ -95,6 +97,7 @@ These are the exact ways research silently degrades. If you catch yourself here,
 - "All sources agree, I'll merge them into one clean statement." → If they genuinely disagree elsewhere, averaging hides it. Contradiction is a first-class output.
 - "Verbatim gate 10/10 PASS — clean headline." → 10/10 while 22 claims are cited is incomplete-verification-as-complete. Report `N/total cited` or disclose the sample. The checker now fails this as `COVERAGE`.
 - "A subagent came back — good, synthesize." → The Agent tool returns only a narration; an empty or schema-less return is invisible until it corrupts the synthesis. Run `check_subagent_report.py` on every return first.
+- "It's just a re-scope over cached snapshots, I'll re-attack the claims inline." → Inline re-attack is shallower than the dispatched adversary that first found the nuance; load-bearing findings coarsen silently. Open the deepest cached source and dispatch the adversary for load-bearing claims.
 
 ## Rationalizations
 
