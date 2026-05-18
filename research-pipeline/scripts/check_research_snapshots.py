@@ -197,6 +197,57 @@ def epistemic_findings(doc_text: str, doc_name: str) -> list[str]:
     return out
 
 
+# v1.9 (Stage -1): the recon-manifest's one mechanical invariant — a
+# source the reconnaissance flagged `material=yes` must not silently
+# vanish by canonization. It must carry verdict_slot `snapshotted:<sha>`
+# (sha resolving to a provenance-manifest entry) or an explicit
+# `gap:weakened` / `gap:dropped`. material=no and the source_class /
+# freshness / why fields are judgment and deliberately NOT gated (the
+# s-zvs honest-boundary lesson). Inert with no recon-manifest -> FP≈0.
+_RECON = re.compile(r"```recon-manifest\n(.*?)\n```", re.DOTALL)
+_RECON_OK_GAP = {"gap:weakened", "gap:dropped"}
+
+
+def recon_findings(doc_text: str, manifest: list[sm.ManifestLine] | None,
+                   doc_name: str) -> list[str]:
+    m = _RECON.search(doc_text)
+    if not m:
+        return []                                   # inert -> FP≈0
+    prov_shas = [ml.sha256 for ml in (manifest or [])]
+    out: list[str] = []
+    for raw in m.group(1).splitlines():
+        ln = raw.strip()
+        if not ln or ln.startswith("#"):            # preamble / blank
+            continue
+        parts = raw.split("\t")
+        if len(parts) != 6:
+            out.append(f"COVERAGE[research-snapshot]: {doc_name}:recon: "
+                       f"recon-manifest line has {len(parts)} tab fields, "
+                       f"expected 6 (material url source_class freshness "
+                       f"why verdict_slot) [fix the row]")
+            continue
+        material, url, _sc, _fr, _why, verdict = (p.strip() for p in parts)
+        if material.lower() != "yes":               # material=no -> judgment
+            continue
+        if not verdict:
+            out.append(f"COVERAGE[research-snapshot]: {doc_name}:recon="
+                       f"{url}: material source has empty verdict_slot — "
+                       f"recon flagged it material but it never resolved "
+                       f"[set snapshotted:<sha> or gap:weakened/gap:dropped]")
+        elif verdict.startswith("snapshotted:"):
+            sha = verdict.split(":", 1)[1]
+            if not sha or not any(p.startswith(sha) for p in prov_shas):
+                out.append(f"COVERAGE[research-snapshot]: {doc_name}:recon="
+                           f"{url}: verdict snapshotted:{sha} has no "
+                           f"matching provenance-manifest entry [snapshot "
+                           f"the source and cite it, or tag gap:weakened]")
+        elif verdict not in _RECON_OK_GAP:
+            out.append(f"COVERAGE[research-snapshot]: {doc_name}:recon="
+                       f"{url}: invalid verdict_slot {verdict!r} [use "
+                       f"snapshotted:<sha> | gap:weakened | gap:dropped]")
+    return out
+
+
 def extract_manifest(doc_text: str) -> list[sm.ManifestLine] | None:
     m = _BLOCK.search(doc_text)
     if not m:
@@ -242,6 +293,7 @@ def main(argv: list[str] | None = None) -> int:
     cover += thin_snapshot_findings(manifest, Path(a.cache_dir), doc_path.name)
     cover += resynthesis_findings(doc_text, doc_path.name)
     cover += epistemic_findings(doc_text, doc_path.name)
+    cover += recon_findings(doc_text, manifest, doc_path.name)
     if (c := coverage_finding(doc_text, doc_path.name, n_cited)):
         cover.append(c)
     for line in (*drift, *cover):
