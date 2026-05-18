@@ -213,3 +213,85 @@ def test_duplicate_claim_tag_flagged(tmp_path, capsys):
     assert rc == 1
     assert "COVERAGE[research-snapshot]" in out and "claim_tag" in out
     assert "A1" in out
+
+
+# --- v1.5: re-synthesis declaration -> depth obligation -------------------
+
+_RESYNTH_PROSE = (
+    "Текущая работа — обоснованно соразмерный ре-синтез с фокусом на Дубай "
+    "поверх уже воспроизводимых content-addressed снапшотов. Повторный "
+    "fetch уже закэшированного не выполнялся намеренно."
+)
+
+
+def test_resynthesis_declared_without_dispatch_flagged(tmp_path, capsys):
+    """Re-synthesis declared but no machine-readable adversary-dispatch
+    record -> COVERAGE (Stage 0: inline re-attack silently coarsens)."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = f"{_RESYNTH_PROSE}\n\nFinding [^h:{shas[0][:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_cited_doc([_line("c1", shas[0])], body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "COVERAGE[research-snapshot]" in out and "re-synthesis" in out
+
+
+def test_resynthesis_with_dispatch_record_clean(tmp_path, capsys):
+    """A machine-readable adversary-dispatch record satisfies the Stage 0
+    obligation -> not flagged."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = (f"{_RESYNTH_PROSE}\n\n"
+            f"adversary-dispatch: subagent=skeptic report=ab12cd34 "
+            f"verdict=survived\n\nFinding [^h:{shas[0][:8]}]")
+    doc = tmp_path / "r.md"
+    doc.write_text(_cited_doc([_line("c1", shas[0])], body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "re-synthesis" not in out
+
+
+def test_no_resynthesis_marker_inert(tmp_path, capsys):
+    """No re-synthesis declaration -> gate stays silent even with no
+    dispatch record (FP≈0; fresh-fetch docs are unaffected)."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = f"Fresh research, all sources fetched. Finding [^h:{shas[0][:8]}]"
+    doc = tmp_path / "r.md"
+    doc.write_text(_cited_doc([_line("c1", shas[0])], body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "re-synthesis" not in out
+
+
+def test_real_choueifat_resynthesis_case_flagged(tmp_path, capsys):
+    """Regression from the real artifact, hard-wrapped declaration
+    sentence included (the [^.\\n] vs [^.] regression): declares
+    re-synthesis over the cache, adversarial only in prose, no
+    machine-readable dispatch record."""
+    cache = tmp_path / "cache"
+    shas = _shas(1, cache)
+    body = (
+        "### Методологическая прозрачность\n"
+        "- **Stage 0:** полный fan-out исполнен ранее. Текущая работа —\n"
+        "  обоснованно соразмерный ре-синтез с фокусом на Дубай и переводом "
+        "на русский\n"
+        "  **поверх уже воспроизводимых content-addressed снапшотов**, плюс "
+        "свежий\n"
+        "  adversarial-проход по несущим утверждениям. Повторный fetch уже\n"
+        "  закэшированного не выполнялся намеренно — снапшоты по построению\n"
+        "  воспроизводимы.\n"
+        "- **Adversarial-проход:** несущие утверждения атакованы на\n"
+        "  опровержение; вердикты проставлены метками.\n\n"
+        f"Рейтинг KHDA [^h:{shas[0][:8]}]"
+    )
+    doc = tmp_path / "choueifat.md"
+    doc.write_text(_cited_doc([_line("c1", shas[0])], body))
+    rc = crs.main(["--doc", str(doc), "--cache-dir", str(cache)])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "COVERAGE[research-snapshot]" in out and "re-synthesis" in out
