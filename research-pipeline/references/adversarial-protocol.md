@@ -40,5 +40,31 @@ re-running the funnel) and can see at a glance what is safe to build code on
 versus what is a hypothesis. This cheaply kills single-synthesizer
 confirmation bias.
 
+## Mechanical backstop (v1.8)
+
+The protocol above is prose; its canonization rule is enforced.
+`check_research_snapshots.py` flags, as `COVERAGE`:
+
+- a claim carrying a `refuted` epistemic-status tag still canonized as a
+  normal claim (drop it or reframe as an explicit open contradiction);
+- an epistemic-shaped tag `[class, verified?, verdict]` whose `verdict`
+  is outside `{survived|weakened|refuted}` — a malformed/absent verdict
+  means the adversarial pass silently did not conclude.
+
+Inert when the doc uses no epistemic-status tag → FP≈0. Deciding *which*
+claims are load-bearing is a research judgment and is deliberately **not**
+gated (same honesty boundary as the different-URL depth limitation — see
+SKILL.md "Known limitations"; faking that gate would repeat the v1.1/s-ag3
+mistake).
+
+**Reusable step, not a separate skill.** This adversarial stage was a
+candidate to spin out as its own skill. Decision: it stays a reusable
+*step* of this pipeline. It is intrinsic to Stage 6 (it consumes the
+funnel's flagged remainder and feeds canonization) and has no standalone
+use outside a source-grounded pipeline; a separate skill would fragment
+the contract and duplicate the snapshot/manifest coupling. The
+machine-readable epistemic-status tag + the v1.8 backstop *are* the
+reusable interface.
+
 Pattern reuse: daymade `contradiction-finder` + first-class "Key
 Controversies"; ARS `synthesis_overclaim` defect class (overreach).
