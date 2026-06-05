@@ -32,7 +32,7 @@ Research Progress:
 - [ ] 4. Fetch-contract on every cited source (snapshot + manifest line)
 - [ ] 5. Verification funnel: deterministic gates -> judge on the flagged remainder
 - [ ] 6. Adversarial pass: refute load-bearing claims; epistemic-tag each
-- [ ] 7. Canonize: only survived/weakened; emit provenance-manifest block
+- [ ] 7. Canonize: verify working form (manifest + [^h:sha]) → emit canonical form (frontmatter + [^slug] + ## Источники + collapsed provenance-callout)
 ```
 
 **Stage -1 — Reconnaissance.** Before sizing effort, the lead scopes and triages. **-1a (gap-driven, ≤3 questions):** reconcile the request against objective · scope · freshness horizon · project-payload; ask only what is missing, or 0 questions if already specified or the user is unavailable (record derived assumptions explicitly). **-1b (autonomous):** triage the source landscape and emit a ` ```recon-manifest ` block (one TSV line per source: `material`, `url`, `source_class`, `freshness`, `why`, `verdict_slot`). See [references/recon-protocol.md](references/recon-protocol.md). This is what re-introduces freshness and personalization as *contracted* inputs, honestly tagged, without weakening the verbatim canon.
@@ -58,7 +58,11 @@ It prints the manifest TSV line. Collect every line for Stage 7. (Use
 
 **Stage 6 — Adversarial pass.** A separate sub-agent whose mandate is to *refute* each load-bearing claim. See [references/adversarial-protocol.md](references/adversarial-protocol.md). Output per claim: `survived | weakened | refuted` + epistemic-status tag `[class, verified?, verdict]`. The v1.8 backstop fails `COVERAGE` if a `refuted` claim is canonized normally or an epistemic tag's verdict is malformed. For every recon-manifest source tagged `freshness=stale?`, the adversary must check whether a newer official version supersedes the claim and, if so, tag it `weakened [superseded-by <version>]` rather than a silently stale `survived`.
 
-**Stage 7 — Canonize.** Only `survived`/`weakened` claims enter the document. `refuted` → drop, or reframe as an explicit open contradiction (never silently average). End the document with a fenced ` ```provenance-manifest ` block of the collected TSV lines; each canonized claim footnotes `[^h:<sha8>]`, not a bare URL. The provenance summary reports verbatim coverage as `N/<total cited>` (or an explicit `K of M sampled`) — never `N/N` passed off as complete. `claim_tag` is unique per snapshot; every manifest line is cited. Verify with:
+**Stage 7 — Canonize (verify-then-emit).** Only `survived`/`weakened` claims enter the document. `refuted` → drop, or reframe as an explicit open contradiction (never silently average).
+
+*7a — Working form (for verification).* Assemble the doc with a fenced ` ```provenance-manifest ` block of the collected TSV lines; each canonized claim footnotes `[^h:<sha8>]`, not a bare URL. The provenance summary reports verbatim coverage as `N/<total cited>` (or an explicit `K of M sampled`) — never `N/N` passed off as complete. `claim_tag` is unique per snapshot; every manifest line is cited. Verify this working form with the snapshot/coverage gates below — they parse `[^h:<sha8>]` and the bare manifest, so run them BEFORE 7b.
+
+*7b — Canonical emit (the final document form).* Once the gates pass, convert to the canonical form before delivering — see [references/canonical-format.md](references/canonical-format.md). In short: lift structured provenance into YAML frontmatter (`type/title/created/updated/status/method/beads/source_urls/tags`); relabel each `[^h:<sha8>]` → a stable `[^slug]`; add a `## Источники` section with `[^slug]: [label](url) — locator.` defs resolved from the manifest; move the method-narrative + the `provenance-manifest` TSV into a collapsed `> [!note]- Provenance & source manifest — <method> (machine audit)` callout at the very end. This keeps machine-audit out of the reading flow and fixes the broken-`[^h:sha]`-ref class. Transform is **lossless on prose** (body char-identical minus footnote markers). Verify (on the 7a working form):
 
 ```bash
 python3 scripts/check_research_snapshots.py --doc <doc.md> \
