@@ -1,6 +1,6 @@
 ---
 name: research-pipeline
-description: Use when conducting research whose claims must be source-grounded, independently verifiable, and reproducible across sessions or machines — not a quick lookup. Explicit-invocation only.
+description: Disciplined multi-source research pipeline that produces a verifiable, citation-backed report — orchestrated subagents, source-discipline, content-addressed snapshots, a deterministic→judge verification funnel, and a mandatory adversarial fact-check pass. Use when a deep-research document (best-practices canon, technology evaluation, claims that downstream code or decisions will lean on) must be source-grounded, fact-checked, and reproducible across sessions or machines — not a quick lookup. Explicit-invocation only.
 disable-model-invocation: true
 ---
 
