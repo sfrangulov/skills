@@ -42,8 +42,8 @@ material	url	source_class	freshness	why	verdict_slot
 
 - `material` — `yes` | `no`. `yes` puts the line under the Stage 7 gate.
 - `url` — the source URL (no tab/newline).
-- `source_class` — `official` | `authoritative` | `general` (as in
-  subagent-spec.md).
+- `source_class` — `official` | `primary` | `authoritative-secondary` |
+  `general` (the Stage 3 source-discipline priority order; as in subagent-spec.md).
 - `freshness` — recon judgment: `current` | `stale?` | `unknown`,
   optionally `current:<version>` (e.g. `current:GPT-5.5`).
 - `why` — one phrase: why it is material. Advisory; read by the lead and

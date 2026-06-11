@@ -32,7 +32,7 @@ here" is a first-class output — never silently average disagreeing sources.
 Machine-readable artifact of this pass, on every load-bearing claim:
 
 ```
-[primary|secondary|inferred, verified?, survived|weakened]
+[primary|secondary|inferred, verified?, survived|weakened|refuted]
 ```
 
 A downstream agent does **not** re-verify a `survived` claim (saves

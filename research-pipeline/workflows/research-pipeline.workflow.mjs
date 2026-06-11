@@ -19,7 +19,10 @@ export const meta = {
 // from prose ("you are the lead, dispatch 3-5 subagents") into deterministic
 // code. What it ADOPTS from the built-in `deep-research` workflow:
 //   - schema-forced subagent returns  -> validation upstream, model retries
-//     on mismatch (supersedes post-hoc scripts/check_subagent_report.py)
+//     on mismatch. Combined with the Fetch-stage barred-verbatim-tier enum and
+//     the tier==manifest-tool rule, this folds in the invariants that
+//     scripts/check_subagent_report.py enforced (structure, barred verbatim
+//     tiers, declared-tier↔manifest-tool) — superseded, not silently dropped.
 //   - 3-vote perspective-diverse adversarial quorum (2/3 refutes to kill)
 //   - pipeline() so a claim verifies as soon as its source is fetched
 //   - global URL-dedup before fetch (barrier) so we snapshot each URL once
@@ -65,10 +68,14 @@ export const meta = {
 //     [^h: refs survive; every footnote relabeled to a human [^slug]. Runs on the
 //     7b COMMITTED form.
 //   One committed file cannot satisfy both — they are mutually exclusive by design
-//   (verification form vs reading form). 7a proves reproducibility, then 7b is the
-//   lossless relabel that ships. If the repo wires the skill Stop-hook, it re-runs
-//   the skill gate; if NOT (e.g. this vault), the committed [^slug] form must pass
-//   ONLY the repo gate, and the skill gate is satisfied on 7a inside this stage.
+//   (verification form vs reading form). The [^h:sha] coverage/citation proof
+//   happens on 7a (skill_gate_exit==0 below) and is captured at run time — it is
+//   NOT re-checkable on the committed 7b form, which has zero [^h:sha] refs, so
+//   check_research_snapshots' coverage + body↔manifest-citation halves go inert
+//   (n_cited==0). What STILL anchors 7b reproducibility: the provenance-manifest
+//   TSV (sha256/source → snapshot/DRIFT + recon verdict_slot checks, which run
+//   regardless of n_cited) plus the repo canon gate. So a Stop-hook re-run on the
+//   committed form re-validates snapshots, not citation-completeness.
 // ---------------------------------------------------------------------------
 
 const QUESTION = typeof args === 'string' ? args : (args && args.question) || ''
@@ -149,6 +156,7 @@ const SCOPE_SCHEMA = {
           source_class: { type: 'string', enum: ['official', 'primary', 'authoritative-secondary', 'general'] },
           freshness: { type: 'string' },
           why: { type: 'string' },
+          verdict_slot: { type: 'string', description: 'resolved at canonization (Stage 7): snapshotted:<sha8> | gap:weakened | gap:dropped; omitted/empty at scope time' },
         },
       },
     },
@@ -175,11 +183,12 @@ const SEARCH_SCHEMA = {
 
 const FETCH_SCHEMA = {
   type: 'object',
-  required: ['url', 'dead', 'fetch_tier', 'manifest_line', 'claims'],
+  required: ['url', 'source_class', 'dead', 'fetch_tier', 'manifest_line', 'claims'],
   properties: {
     url: { type: 'string' },
+    source_class: { type: 'string', enum: ['official', 'primary', 'authoritative-secondary', 'general'], description: 'echo the source class (threaded into the epistemic tag)' },
     dead: { type: 'boolean', description: 'true if every fetch tier failed (url-dead, terminal)' },
-    fetch_tier: { type: 'string', description: 'tier that succeeded: defuddle | firecrawl | search | wayback' },
+    fetch_tier: { type: 'string', enum: ['defuddle', 'firecrawl', 'search', 'wayback', 'cache'], description: 'tier that succeeded; webfetch/websearch are NOT verbatim tiers and are barred here' },
     snapshot_sha: { type: 'string', description: 'sha256 of the cached snapshot body' },
     manifest_line: { type: 'string', description: 'TSV line printed by snapshot_manifest.py' },
     claims: {
@@ -294,15 +303,15 @@ log(`${searches.length} angles searched · ${sources.length} unique sources afte
 phase('Fetch')
 const fetched = (await parallel(sources.map(src => () =>
   agent(
-    `Fetch-contract for one source. First READ ${SKILL_DIR}/references/fetch-contract.md and follow the escalation tiers exactly. WebFetch is BARRED as a verbatim tier (it paraphrases).
+    `Fetch-contract for one source. First READ ${SKILL_DIR}/references/fetch-contract.md and follow the escalation tiers exactly. WebFetch/WebSearch are BARRED as verbatim tiers (they paraphrase) — never use them as the fetch_tier of a claim that carries a quote.
 
 URL: ${src.url}
-Likely source_class: ${src.source_class}. Hint: ${src.claim_hint}
+Likely source_class: ${src.source_class} (echo it back as source_class). Hint: ${src.claim_hint}
 
 Steps (all via Bash):
-  1. Escalate fetch: defuddle (tier 1) → firecrawl (tier 2) → search-as-discovery (tier 3) → wayback (tier 4). Record which tier succeeded. If all fail → return dead=true.
-  2. Snapshot the extracted body (content-addressed):
-       python3 ${SKILL_DIR}/scripts/snapshot_manifest.py --claim-tag <unique-tag> --url "${src.url}" --tool <tier> --locator "<section>" --cache-dir ${CACHE_DIR} < extracted_body.md
+  1. Escalate fetch: defuddle (tier 1) → firecrawl (tier 2) → search-as-discovery (tier 3) → wayback (tier 4). Record which tier succeeded as fetch_tier. If all fail → return dead=true.
+  2. Snapshot the extracted body (content-addressed). The --tool you pass MUST equal your fetch_tier (manifest tool == fetch_tier — the verifier cross-checks this):
+       python3 ${SKILL_DIR}/scripts/snapshot_manifest.py --claim-tag <unique-tag> --url "${src.url}" --tool <fetch_tier> --locator "<section>" --cache-dir ${CACHE_DIR} < extracted_body.md
      Capture the printed TSV line as manifest_line and the sha as snapshot_sha. Use a unique claim_tag per snapshot.
   3. Extract falsifiable claims this source supports. Each claim needs a VERBATIM substring quote from the snapshot, a locator, and load_bearing=true/false (will downstream code/decisions lean on it?). A claim found only in a search snippet (source never opened) is NOT a claim here — drop it or mark dead.
 Return only the structured object.`,
@@ -313,7 +322,7 @@ Return only the structured object.`,
 const manifestLines = fetched.filter(f => !f.dead && f.manifest_line).map(f => f.manifest_line)
 const claims = fetched
   .filter(f => !f.dead)
-  .flatMap(f => (f.claims || []).map(c => ({ ...c, url: f.url, source_class: f.source_class || 'authoritative-secondary', snapshot_sha: f.snapshot_sha })))
+  .flatMap(f => (f.claims || []).map(c => ({ ...c, url: f.url, source_class: f.source_class || 'authoritative-secondary', fetch_tier: f.fetch_tier, snapshot_sha: f.snapshot_sha })))
 log(`${fetched.filter(f => f.dead).length} dead · ${manifestLines.length} snapshots · ${claims.length} claims extracted`)
 
 // ===========================================================================
@@ -338,9 +347,10 @@ const judged = await pipeline(
 
 Claim [${claim.claim_tag}]: ${claim.text}
 Quote (must be verbatim substring of the snapshot): ${JSON.stringify(claim.quote)}
-Snapshot: ${CACHE_DIR}/${claim.snapshot_sha || '<sha>'}.md   ·   URL: ${claim.url}
+Snapshot: ${CACHE_DIR}/${claim.snapshot_sha || '<sha>'}.md   ·   URL: ${claim.url}   ·   fetch_tier: ${claim.fetch_tier || '<none>'}
 
 Run the funnel via Bash, deterministic gates FIRST (FP≈0, ~free):
+  A0) fetch_tier is an OPENED verbatim tier (defuddle/firecrawl/wayback/cache). If it is webfetch/websearch or empty → gate=fail (a verbatim quote cannot come from a barred/paraphrasing tier).
   A) URL resolves (curl -sI, HTTP 200, not soft-404)
   B) quote is a verbatim substring of the snapshot file (normalize NFKC/whitespace/smart-quotes/de-hyphen)
   C) the claim's key tokens co-occur within a ±1500-char window of the quote
@@ -399,6 +409,9 @@ const synthInput = canonized.map(j => ({
   status: j.status,
   epistemic_tag: j.tag,
 }))
+const reconManifest = scope.recon_manifest // Stage -1b triage; synth must reconcile material=yes sources against the snapshots
+const snappedUrls = new Set(fetched.filter(f => !f.dead && f.snapshot_sha).map(f => normUrl(f.url)))
+const reconForSynth = reconManifest.map(r => ({ ...r, _snapshotted: snappedUrls.has(normUrl(r.url)) }))
 const synth = await agent(
   `You are the synthesizer. First READ ${SKILL_DIR}/references/canonical-format.md.
 
@@ -408,6 +421,9 @@ ${JSON.stringify(synthInput, null, 2)}
 
 Provenance-manifest TSV lines to embed verbatim:
 ${manifestLines.join('\n')}
+
+Recon-manifest (Stage -1b triage; _snapshotted = whether this URL reached a snapshot this run):
+${JSON.stringify(reconForSynth, null, 2)}
 ${refuted.length ? `\nRefuted (reframe genuine disagreements as explicit open contradictions; never silently average):\n${refuted.map(r => `- [${r.claim.claim_tag}] ${r.claim.text}`).join('\n')}` : ''}
 
 Two gates want OPPOSITE footnote formats — this is by design, so the stage is two-phase:
@@ -417,11 +433,12 @@ One committed file cannot satisfy both. Do not try.
 
 Do Stage 7:
   7a — Assemble the WORKING form in ${DOCS_DIR}: body with each claim footnoted [^h:<sha8>] (NOT a bare URL), a fenced \`\`\`provenance-manifest block of the TSV lines, each claim carrying its epistemic tag. Get the date with \`date +%F\` (Bash) for the frontmatter. Report verbatim coverage as N/<total cited> — never N/N as complete.
+  Also emit a fenced \`\`\`recon-manifest block — one TSV line per recon source, 6 tab fields: material\\turl\\tsource_class\\tfreshness\\twhy\\tverdict_slot. RECONCILE every material=yes source: verdict_slot = snapshotted:<sha8> if _snapshotted is true (use the sha from the provenance-manifest), else gap:weakened (still relevant, unsnapshotted) or gap:dropped (discarded). A material=yes source must NEVER be silently absent or carry an empty verdict_slot — check_research_snapshots gates exactly this.
   Verify the working form via Bash → report skill_gate_exit:
      python3 ${SKILL_DIR}/scripts/check_research_snapshots.py --doc <doc> --cache-dir ${CACHE_DIR}
   COVERAGE lines are author defects to fix; DRIFT lines are advisory. Do not proceed to 7b until skill_gate_exit is 0.
 
-  7b — Convert to the canonical form (frontmatter type/title/created/updated/status/method/beads/source_urls/tags with method: research-pipeline; relabel every [^h:<sha8>] → a stable [^slug]; add ## Источники with [^slug]: [label](url) — locator. resolved from the manifest; move method-narrative + provenance-manifest into a collapsed > [!note]- Provenance callout at the end). The relabel is LOSSLESS on prose (body char-identical minus footnote markers).
+  7b — Convert to the canonical form (frontmatter type/title/created/updated/status/method/beads/source_urls/tags with method: research-pipeline; relabel every [^h:<sha8>] → a stable [^slug]; add ## Источники with [^slug]: [label](url) — locator. resolved from the manifest; move method-narrative + provenance-manifest + recon-manifest into a collapsed > [!note]- Provenance callout at the end). The relabel is LOSSLESS on prose (body char-identical minus footnote markers).
 
   7b consistency — the [^h:sha]→[^slug] relabel must be a BIJECTION over the manifest. The repo gate only catches ONE direction (a body [^slug] with no definition); two defects slip past it, so check them yourself:
     - orphan_slugs: a [^slug] DEFINED in ## Источники but never cited in the body. Must be empty.

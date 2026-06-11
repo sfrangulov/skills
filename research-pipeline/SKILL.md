@@ -24,7 +24,7 @@ Copy this checklist into your working notes and check off as you go:
 
 ```
 Research Progress:
-- [ ] -1. Reconnaissance: scope (≤3 Qs, gap-driven) + source-triage → recon-manifest
+- [ ] -1. Reconnaissance: -1a scope (≤3 Qs, gap-driven) + -1b source-triage → recon-manifest
 - [ ] 0. Justify the fan-out (effort tier; ~15x token cost vs single agent)
 - [ ] 1. Lead plans: effort tier + per-subagent structured spec
 - [ ] 2. Dispatch 3-5 subagents (parallel; dependent ones serial)
@@ -32,7 +32,7 @@ Research Progress:
 - [ ] 4. Fetch-contract on every cited source (snapshot + manifest line)
 - [ ] 5. Verification funnel: deterministic gates -> judge on the flagged remainder
 - [ ] 6. Adversarial pass: refute load-bearing claims; epistemic-tag each
-- [ ] 7. Canonize: verify working form (manifest + [^h:sha]) → emit canonical form (frontmatter + [^slug] + ## Источники + collapsed provenance-callout)
+- [ ] 7. Canonize: 7a verify working form (manifest + [^h:sha]) → 7b emit canonical form (frontmatter + [^slug] + ## Источники + collapsed provenance-callout)
 ```
 
 **Stage -1 — Reconnaissance.** Before sizing effort, the lead scopes and triages. **-1a (gap-driven, ≤3 questions):** reconcile the request against objective · scope · freshness horizon · project-payload; ask only what is missing, or 0 questions if already specified or the user is unavailable (record derived assumptions explicitly). **-1b (autonomous):** triage the source landscape and emit a ` ```recon-manifest ` block (one TSV line per source: `material`, `url`, `source_class`, `freshness`, `why`, `verdict_slot`). See [references/recon-protocol.md](references/recon-protocol.md). This is what re-introduces freshness and personalization as *contracted* inputs, honestly tagged, without weakening the verbatim canon.
