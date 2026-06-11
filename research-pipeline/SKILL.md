@@ -24,7 +24,7 @@ Copy this checklist into your working notes and check off as you go:
 
 ```
 Research Progress:
-- [ ] -1. Reconnaissance: scope (≤3 Qs, gap-driven) + source-triage → recon-manifest
+- [ ] -1. Reconnaissance: -1a scope (≤3 Qs, gap-driven) + -1b source-triage → recon-manifest
 - [ ] 0. Justify the fan-out (effort tier; ~15x token cost vs single agent)
 - [ ] 1. Lead plans: effort tier + per-subagent structured spec
 - [ ] 2. Dispatch 3-5 subagents (parallel; dependent ones serial)
@@ -32,14 +32,14 @@ Research Progress:
 - [ ] 4. Fetch-contract on every cited source (snapshot + manifest line)
 - [ ] 5. Verification funnel: deterministic gates -> judge on the flagged remainder
 - [ ] 6. Adversarial pass: refute load-bearing claims; epistemic-tag each
-- [ ] 7. Canonize: verify working form (manifest + [^h:sha]) → emit canonical form (frontmatter + [^slug] + ## Источники + collapsed provenance-callout)
+- [ ] 7. Canonize: 7a verify working form (manifest + [^h:sha]) → 7b emit canonical form (frontmatter + [^slug] + ## Источники + collapsed provenance-callout)
 ```
 
 **Stage -1 — Reconnaissance.** Before sizing effort, the lead scopes and triages. **-1a (gap-driven, ≤3 questions):** reconcile the request against objective · scope · freshness horizon · project-payload; ask only what is missing, or 0 questions if already specified or the user is unavailable (record derived assumptions explicitly). **-1b (autonomous):** triage the source landscape and emit a ` ```recon-manifest ` block (one TSV line per source: `material`, `url`, `source_class`, `freshness`, `why`, `verdict_slot`). See [references/recon-protocol.md](references/recon-protocol.md). This is what re-introduces freshness and personalization as *contracted* inputs, honestly tagged, without weakening the verbatim canon.
 
 **Stage 0 — Justify.** Effort tier decided here, by you (not the subagent), from the Stage -1 recon output: fact = 1 agent / 3–10 calls; comparison = 2–4; complex = >10. If the value does not justify ~15× tokens, stop and answer directly. **Re-synthesis over an existing cache** (re-scope, translate) is legitimate and proportionate — but for each *load-bearing* claim it must open the deepest cached source for that fact (the regulator report, not just the summary page) and re-run the adversarial pass as a dispatched sub-agent, not a quick inline self-check. An inline re-attack silently coarsens load-bearing findings. When you declare re-synthesis, record the dispatched pass machine-readably — a line `adversary-dispatch: subagent=<id> report=<sha8> verdict=<survived|weakened|refuted>`. The v1.5 gate flags a doc that declares re-synthesis but carries no such record (prose like "claims were attacked" is exactly the inline coarsening); inert without the declaration → FP≈0.
 
-**Stage 1–2 — Orchestrate.** You are the lead and the main thread (subagents cannot spawn subagents). Give each subagent a structured task spec — see [references/subagent-spec.md](references/subagent-spec.md). Do not delegate effort sizing. Validate every returned report with `python3 scripts/check_subagent_report.py` before synthesis — an empty or non-conforming Agent-tool return is otherwise silent; re-dispatch once, then fail loud.
+**Stage 1–2 — Orchestrate.** You are the lead and the main thread (subagents cannot spawn subagents). Give each subagent a structured task spec — see [references/subagent-spec.md](references/subagent-spec.md). Do not delegate effort sizing. Validate every returned report with `python3 scripts/check_subagent_report.py` (pass `--manifest <doc>` to also cross-check each declared `fetch_tier` against the snapshot manifest's tool) before synthesis — an empty or non-conforming Agent-tool return is otherwise silent; re-dispatch once, then fail loud.
 
 **Stage 3 — Source-discipline.** official/primary > authoritative-secondary > general. You never invent a URL; URLs come only from subagent notes.
 
@@ -54,7 +54,7 @@ python3 scripts/snapshot_manifest.py --claim-tag c1 --url "<url>" \
 It prints the manifest TSV line. Collect every line for Stage 7. (Use
 `python3`; the bundled scripts are not invoked via a bare `python`.)
 
-**Stage 5 — Verification funnel.** Deterministic gates first (URL resolves, allowlist, verbatim substring, token co-occurrence), LLM-judge only on the flagged remainder, run by an independent verifier. See [references/verification-funnel.md](references/verification-funnel.md).
+**Stage 5 — Verification funnel.** Deterministic gates A–D first — **A** URL-resolves, **B** allowlist, **C** verbatim-substring, **D** key-token co-occurrence within a **±1500-char window** — disposition `FAIL` (hard) / `FLAG` (→ judge) / `OK`; LLM-judge (a different, cheaper model) only on the `FLAG` remainder, run by an independent verifier that emits one machine line per claim: `VERIFY[<id>]: ok | unsupported | url-dead | paywalled | inconclusive [tier= cost=]`. The lead acts **only on the verdict**. See [references/verification-funnel.md](references/verification-funnel.md).
 
 **Stage 6 — Adversarial pass.** A separate sub-agent whose mandate is to *refute* each load-bearing claim. See [references/adversarial-protocol.md](references/adversarial-protocol.md). Output per claim: `survived | weakened | refuted` + epistemic-status tag `[class, verified?, verdict]`. The v1.8 backstop fails `COVERAGE` if a `refuted` claim is canonized normally or an epistemic tag's verdict is malformed. For every recon-manifest source tagged `freshness=stale?`, the adversary must check whether a newer official version supersedes the claim and, if so, tag it `weakened [superseded-by <version>]` rather than a silently stale `survived`.
 

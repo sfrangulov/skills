@@ -11,7 +11,7 @@ OBJECTIVE: <one sentence; the question this subagent alone owns>
 SOURCE ALLOWLIST: <domains/source-classes it may use; official/primary first>
 TOOL ALLOWLIST: <e.g. WebSearch for discovery; defuddle/firecrawl for reading>
 OUTPUT SCHEMA (return exactly this):
-  - Sources: [{url, source_class: official|authoritative|general, opened: true|false,
+  - Sources: [{url, source_class: official|primary|authoritative-secondary|general, opened: true|false,
       disposition: <required iff opened:false: escalated|dropped|weakened>,
       fetch_tier: <required iff opened:true: defuddle|firecrawl|wayback|cache;
         webfetch/websearch are NOT verbatim tiers>}]
