@@ -20,6 +20,8 @@ Use when the work product is a research document others (or future you, on anoth
 
 ## The pipeline
 
+**Default execution is the deterministic Workflow** (`workflows/research-pipeline.workflow.mjs`) — it runs the stages below and forces the fetch-contract by construction (every source snapshotted before a claim leans on it). Drive the stages by hand (manual lead) only for re-synthesis over an existing cache or a single known source — manual has a silent snapshot hole (see "Running it"). Either way, the stages below are the contract.
+
 Copy this checklist into your working notes and check off as you go:
 
 ```
@@ -106,32 +108,39 @@ A non-zero exit prints the flagged artifacts to stderr loudly. This is the
 layer that makes the whole pipeline *enforced, not emergent* at the
 orchestration boundary, not just within a doc you happened to check.
 
-## Running it: manual lead, or the deterministic Workflow
+## Running it: the Workflow is the default path
 
-The stages above can be driven two ways — same gates, same contracts:
+The stages above are the **contract**. There are two ways to execute them, and
+they are **not** equivalent:
 
-- **Manual lead (default).** You are the main thread and dispatch subagents
-  per the stages above. Best when scope is fluid and you steer discovery turn
-  by turn.
-- **Deterministic Workflow.** [`workflows/research-pipeline.workflow.mjs`](workflows/research-pipeline.workflow.mjs)
+- **Deterministic Workflow — the default for fresh, multi-source web research.**
+  [`workflows/research-pipeline.workflow.mjs`](workflows/research-pipeline.workflow.mjs)
   encodes Stages -1b → 7 as code: fan-out search (up to 20 angles),
   fetch-contract + snapshot per unique source, the verification funnel, a
   3-vote adversarial quorum, and the two-phase 7a→7b canonize. Invoke with
   `Workflow({ scriptPath: "<skill>/workflows/research-pipeline.workflow.mjs",
-  args: { question, assumptions, canonGate } })`. Because the orchestration
-  lives in the script (not in an agent), the "subagents cannot spawn
-  subagents" limit does not bind it — the fan-out is real.
+  args: { question, assumptions, canonGate } })`. **Prefer it because it forces
+  the fetch-contract by construction** — every source is snapshotted before a
+  claim is built on it, so the skill's core invariant can't be skipped. The
+  orchestration lives in the script (not in an agent), so the "subagents cannot
+  spawn subagents" limit does not bind it. Pre-invocation: do Stage -1a (the ≤3
+  clarifying questions) in the main thread first — agents can't prompt the user
+  — then pass the refined question + assumptions as `args`. All I/O runs inside
+  the subagents; the skill gate runs on the 7a `[^h:sha]` form, the repo canon
+  gate (if any) on the committed 7b `[^slug]` form via `args.canonGate`.
+- **Manual lead — the EXCEPTION, not a co-equal default.** You become the main
+  thread and dispatch subagents by hand. Legitimate only for re-synthesis over
+  an already-snapshotted cache, or a single known source. If you go manual on
+  fresh web sources you **must run the fetch-contract per source yourself**
+  (defuddle → `snapshot_manifest.py`) — that is exactly the step subagents
+  silently skip when they hand back narrative + URLs + verbatim quotes. And know
+  the blind spot: the Stop-hook gate (`check_all.py`) only inspects docs that
+  *have* a `provenance-manifest` block, so a manual run that skipped snapshotting
+  produces a no-manifest doc the gate never flags. Manual is **not** "same
+  guarantees, less code" — it is the path where the core invariant can be
+  silently dropped.
 
-Both are **explicit-invocation only** and cost ~15× a chat answer. Two caveats
-for the Workflow path:
-
-- **Stage -1a (the ≤3 clarifying questions) is NOT inside it** — agents cannot
-  prompt the user. Do -1a in the main thread first, then pass the refined
-  question + derived assumptions as `args`.
-- **All I/O runs inside the subagents** (fetch, `snapshot_manifest.py`,
-  curl-resolve, the gates); the JS glue only orchestrates and tallies. The
-  skill gate runs on the 7a `[^h:sha]` form; the repo canon gate (if any) on
-  the committed 7b `[^slug]` form — pass it as `args.canonGate`.
+Both are **explicit-invocation only** and cost ~15× a chat answer.
 
 ## Worked example (compressed)
 
@@ -161,6 +170,7 @@ These are the exact ways research silently degrades. If you catch yourself here,
 - "All sources agree, I'll merge them into one clean statement." → If they genuinely disagree elsewhere, averaging hides it. Contradiction is a first-class output.
 - "Verbatim gate 10/10 PASS — clean headline." → 10/10 while 22 claims are cited is incomplete-verification-as-complete. Report `N/total cited` or disclose the sample. The checker now fails this as `COVERAGE`.
 - "A subagent came back — good, synthesize." → The Agent tool returns only a narration; an empty or schema-less return is invisible until it corrupts the synthesis. Run `check_subagent_report.py` on every return first.
+- "My subagents returned URLs and verbatim quotes — that's my evidence." → Those are **relayed, not content-addressed**. A subagent note is not a snapshot; the fetch-contract (defuddle → `snapshot_manifest.py`) never ran, so nothing is reproducible — and the no-manifest doc slips past the Stop-hook gate silently. This is the default failure of the manual-lead path. Either run the fetch-contract per source, or drive the whole pipeline via the Workflow, which forces it.
 - "It's just a re-scope over cached snapshots, I'll re-attack the claims inline." → Inline re-attack is shallower than the dispatched adversary that first found the nuance; load-bearing findings coarsen silently. Open the deepest cached source and dispatch the adversary for load-bearing claims.
 - "I'll just use whatever sources I already have." → Skipping Stage -1 lets freshness and personalization get optimized away silently. Run recon; a `material=yes` source that never reaches a snapshot must be tagged `gap:weakened`, not dropped.
 
