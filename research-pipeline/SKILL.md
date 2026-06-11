@@ -39,7 +39,7 @@ Research Progress:
 
 **Stage 0 — Justify.** Effort tier decided here, by you (not the subagent), from the Stage -1 recon output: fact = 1 agent / 3–10 calls; comparison = 2–4; complex = >10. If the value does not justify ~15× tokens, stop and answer directly. **Re-synthesis over an existing cache** (re-scope, translate) is legitimate and proportionate — but for each *load-bearing* claim it must open the deepest cached source for that fact (the regulator report, not just the summary page) and re-run the adversarial pass as a dispatched sub-agent, not a quick inline self-check. An inline re-attack silently coarsens load-bearing findings. When you declare re-synthesis, record the dispatched pass machine-readably — a line `adversary-dispatch: subagent=<id> report=<sha8> verdict=<survived|weakened|refuted>`. The v1.5 gate flags a doc that declares re-synthesis but carries no such record (prose like "claims were attacked" is exactly the inline coarsening); inert without the declaration → FP≈0.
 
-**Stage 1–2 — Orchestrate.** You are the lead and the main thread (subagents cannot spawn subagents). Give each subagent a structured task spec — see [references/subagent-spec.md](references/subagent-spec.md). Do not delegate effort sizing. Validate every returned report with `python3 scripts/check_subagent_report.py` before synthesis — an empty or non-conforming Agent-tool return is otherwise silent; re-dispatch once, then fail loud.
+**Stage 1–2 — Orchestrate.** You are the lead and the main thread (subagents cannot spawn subagents). Give each subagent a structured task spec — see [references/subagent-spec.md](references/subagent-spec.md). Do not delegate effort sizing. Validate every returned report with `python3 scripts/check_subagent_report.py` (pass `--manifest <doc>` to also cross-check each declared `fetch_tier` against the snapshot manifest's tool) before synthesis — an empty or non-conforming Agent-tool return is otherwise silent; re-dispatch once, then fail loud.
 
 **Stage 3 — Source-discipline.** official/primary > authoritative-secondary > general. You never invent a URL; URLs come only from subagent notes.
 
@@ -54,7 +54,7 @@ python3 scripts/snapshot_manifest.py --claim-tag c1 --url "<url>" \
 It prints the manifest TSV line. Collect every line for Stage 7. (Use
 `python3`; the bundled scripts are not invoked via a bare `python`.)
 
-**Stage 5 — Verification funnel.** Deterministic gates first (URL resolves, allowlist, verbatim substring, token co-occurrence), LLM-judge only on the flagged remainder, run by an independent verifier. See [references/verification-funnel.md](references/verification-funnel.md).
+**Stage 5 — Verification funnel.** Deterministic gates A–D first — **A** URL-resolves, **B** allowlist, **C** verbatim-substring, **D** key-token co-occurrence within a **±1500-char window** — disposition `FAIL` (hard) / `FLAG` (→ judge) / `OK`; LLM-judge (a different, cheaper model) only on the `FLAG` remainder, run by an independent verifier that emits one machine line per claim: `VERIFY[<id>]: ok | unsupported | url-dead | paywalled | inconclusive [tier= cost=]`. The lead acts **only on the verdict**. See [references/verification-funnel.md](references/verification-funnel.md).
 
 **Stage 6 — Adversarial pass.** A separate sub-agent whose mandate is to *refute* each load-bearing claim. See [references/adversarial-protocol.md](references/adversarial-protocol.md). Output per claim: `survived | weakened | refuted` + epistemic-status tag `[class, verified?, verdict]`. The v1.8 backstop fails `COVERAGE` if a `refuted` claim is canonized normally or an epistemic tag's verdict is malformed. For every recon-manifest source tagged `freshness=stale?`, the adversary must check whether a newer official version supersedes the claim and, if so, tag it `weakened [superseded-by <version>]` rather than a silently stale `survived`.
 
@@ -106,6 +106,33 @@ A non-zero exit prints the flagged artifacts to stderr loudly. This is the
 layer that makes the whole pipeline *enforced, not emergent* at the
 orchestration boundary, not just within a doc you happened to check.
 
+## Running it: manual lead, or the deterministic Workflow
+
+The stages above can be driven two ways — same gates, same contracts:
+
+- **Manual lead (default).** You are the main thread and dispatch subagents
+  per the stages above. Best when scope is fluid and you steer discovery turn
+  by turn.
+- **Deterministic Workflow.** [`workflows/research-pipeline.workflow.mjs`](workflows/research-pipeline.workflow.mjs)
+  encodes Stages -1b → 7 as code: fan-out search (up to 20 angles),
+  fetch-contract + snapshot per unique source, the verification funnel, a
+  3-vote adversarial quorum, and the two-phase 7a→7b canonize. Invoke with
+  `Workflow({ scriptPath: "<skill>/workflows/research-pipeline.workflow.mjs",
+  args: { question, assumptions, canonGate } })`. Because the orchestration
+  lives in the script (not in an agent), the "subagents cannot spawn
+  subagents" limit does not bind it — the fan-out is real.
+
+Both are **explicit-invocation only** and cost ~15× a chat answer. Two caveats
+for the Workflow path:
+
+- **Stage -1a (the ≤3 clarifying questions) is NOT inside it** — agents cannot
+  prompt the user. Do -1a in the main thread first, then pass the refined
+  question + derived assumptions as `args`.
+- **All I/O runs inside the subagents** (fetch, `snapshot_manifest.py`,
+  curl-resolve, the gates); the JS glue only orchestrates and tallies. The
+  skill gate runs on the 7a `[^h:sha]` form; the repo canon gate (if any) on
+  the committed 7b `[^slug]` form — pass it as `args.canonGate`.
+
 ## Worked example (compressed)
 
 Task: "best practices for X, official first then community."
@@ -120,6 +147,7 @@ Read the one you need; all are one level deep from here:
 - [references/fetch-contract.md](references/fetch-contract.md) — Stage 4 fetch-escalation tiers; WebFetch is barred as a verbatim tier
 - [references/verification-funnel.md](references/verification-funnel.md) — Stage 5 deterministic gates → judge → verifier verdicts
 - [references/adversarial-protocol.md](references/adversarial-protocol.md) — Stage 6 refute mandate + epistemic tagging
+- [workflows/research-pipeline.workflow.mjs](workflows/research-pipeline.workflow.mjs) — the whole pipeline (Stages -1b→7) as a deterministic Workflow; see "Running it" above
 
 ## Red Flags — STOP
 

@@ -67,6 +67,19 @@ A non-zero exit prints the flagged artifacts to stderr loudly. If the
 docs dir does not exist the hook is a no-op (exit 0), so it is safe to
 enable globally.
 
+## Running it: manual lead or Workflow
+
+The skill drives the same pipeline two ways (see SKILL.md "Running it"):
+
+- **Manual lead** — the documented default; you dispatch subagents per stage.
+- **Deterministic Workflow** — `workflows/research-pipeline.workflow.mjs`
+  encodes Stages -1b→7 as code (fan-out → fetch+snapshot → verification funnel
+  → adversarial quorum → two-phase canonize). Invoke with
+  `Workflow({ scriptPath: "…/workflows/research-pipeline.workflow.mjs", args: { question, assumptions, canonGate } })`.
+  The clarifying questions (Stage -1a) are done in the main thread before
+  invoking. Nothing extra to install — it reuses the same `scripts/` and
+  `references/`.
+
 ## Updating the installed copy
 
 This skill is installed as a directory copy under `~/.agents/skills/`.

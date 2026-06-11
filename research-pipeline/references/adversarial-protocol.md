@@ -57,6 +57,21 @@ gated (same honesty boundary as the different-URL depth limitation — see
 SKILL.md "Known limitations"; faking that gate would repeat the v1.1/s-ag3
 mistake).
 
+## Re-synthesis: record the dispatched pass
+
+When this pass is re-run over an existing cache (re-scope / translate) it
+must be a *dispatched* sub-agent, never an inline self-check — an inline
+re-attack silently coarsens load-bearing findings. Record it machine-readably
+so the v1.5 gate sees it happened — one line in the doc:
+
+```
+adversary-dispatch: subagent=<id> report=<sha8> verdict=<survived|weakened|refuted>
+```
+
+This is the ref-side definition of the contract SKILL.md Stage 0 enforces (a
+declared re-synthesis carrying no such line is the inline coarsening the gate
+flags).
+
 **Reusable step, not a separate skill.** This adversarial stage was a
 candidate to spin out as its own skill. Decision: it stays a reusable
 *step* of this pipeline. It is intrinsic to Stage 6 (it consumes the
