@@ -58,10 +58,12 @@ Pull out any term that meets **any one** of these conditions:
   tags: [term, core-concept]
 ```
 
-Two fields — `title` and `summary` — aren't part of this extractor's original schema, but every candidate unit across all 5 extractors needs them for cross-type consistency. `title` simply mirrors `term`; `summary` is a short recap distinct from the more detailed `key_distinction` / `why_it_matters` fields. `author_definition` doubles as this candidate type's version of `source_quote` when the author's definition is itself the quoted passage — include a separate `source_quote` only when the clearest quote and the tightest definition come from different passages, as in the example above.
+Three fields — `title`, `source_quote`, and `summary` — aren't part of this extractor's original schema, but every candidate unit across all 5 extractors needs them for cross-type consistency (`methodology/02-stage1-parallel-extract.md`'s minimum-fields contract applies to every candidate, this type included). `title` simply mirrors `term`. `source_quote` is unconditional, exactly like every other extractor's — when the tightest definition and the clearest quote are the same passage, `source_quote` just repeats it (as in cases where `author_definition` is itself the quoted passage); use a different passage only when the clearest quote and the tightest definition genuinely diverge, as in the example above. `summary` is a short recap distinct from the more detailed `key_distinction` / `why_it_matters` fields.
 
 ## Self-check
 
+- [ ] `source_quote` is present and ≤100 words, exactly like every other extractor's candidates
+- [ ] `title` and `summary` are filled in alongside the term-specific fields
 - [ ] `author_definition` uses an actual passage from the book wherever possible
 - [ ] `key_distinction` states how this differs from the common-sense usage (this is the single most valuable field)
 - [ ] `why_it_matters` explains why downstream skills need this clarification

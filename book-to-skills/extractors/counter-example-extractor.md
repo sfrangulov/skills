@@ -75,4 +75,5 @@ Note the added `summary` field: it's not in every extractor's minimal schema by 
 - [ ] Every entry has both `failure_mode` and `mechanism` (not just "this is wrong")
 - [ ] `warning_signs` filled in wherever possible, so the downstream B section has something to work with
 - [ ] `bound_to` states which positive-facing skill(s) this counter-example limits
-- [ ] Backed by a source quote
+- [ ] Backed by a source quote, ≤100 words
+- [ ] `summary` gives a short own-words recap, distinct from the more detailed `failure_mode` / `mechanism` breakdown
