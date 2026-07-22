@@ -8,6 +8,11 @@ The way an author **uses** a word is often not the way a dictionary uses it. If 
 
 This output never becomes a standalone skill — it's consolidated into `GLOSSARY.md`, the **shared dictionary every skill in the pack references**.
 
+## Your input
+
+- `BOOK_OVERVIEW.md`
+- The book text
+
 ## Your remit
 
 Pull out any term that meets **any one** of these conditions:
@@ -16,11 +21,6 @@ Pull out any term that meets **any one** of these conditions:
 2. The author explicitly defines it ("by X, I mean...")
 3. It looks like an everyday word, but the author's usage departs from common sense
 4. It's a load-bearing word in the book's central thesis (like "antifragile" in *Antifragile*)
-
-## Your input
-
-- `BOOK_OVERVIEW.md`
-- The book text
 
 ## Output format
 
