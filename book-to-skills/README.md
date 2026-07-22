@@ -1,14 +1,14 @@
 # book-to-skills
 
-**A Claude Code skill that distills a book — or any long-form source — into a set of atomic, executable agent skills.**
+**A Claude Code skill that distills a book (or any long-form source) into a set of atomic, executable agent skills.**
 
-Point it at a book, a video transcript, a podcast, a course, or an interview. Get back a folder of agent skills, each with a trigger condition, executable steps, and a boundary that says when NOT to use it. The methodology comes off the page and into the moment you actually need it.
+Point it at a book, a video transcript, a podcast, a course, or an interview. Get back a folder of agent skills, each with a trigger condition, executable steps, and a boundary that says when NOT to use it.
 
 ---
 
 ## Why
 
-You read a good book. Six months later, what's left? A vague sense it was worth it, a few quotes, a highlight file you never reopen. The methodology stays on the page. When the real situation shows up — a hard product call, a negotiation, a hiring decision — you don't reach for what the book taught, because it was never in a form you could reach for.
+You read a good book. Six months later, what's left? A vague sense it was worth it, a few quotes, a highlight file you never reopen. The methodology stays on the page. When a real situation shows up (a hard product call, a hiring decision), you don't reach for what the book taught, because it was never in a form you could reach for.
 
 Summaries don't fix this. A summary compresses the book. It doesn't make the book operational. You still have to remember to apply it, and remember how.
 
@@ -54,7 +54,7 @@ The engine is **RIA-TV++**: a seven-stage pipeline that reads the whole work, ex
 
 **Stage 0 — Whole-Work Comprehension.** Read the whole source through the four Adler passes (structure, interpretation, critique, application) and write `BOOK_OVERVIEW.md`: thesis, skeleton, key terms, and where the author is weak. You confirm the skeleton before anything is extracted.
 
-**Stage 1 — Parallel Extraction.** Five subagents run at once through the Agent tool — framework, principle, case, counter-example, and glossary extractors — each writing its own file into `candidates/`. When parallel subagents aren't available, the same five prompts run serially with the same output.
+**Stage 1 — Parallel Extraction.** Five subagents run at once through the Agent tool (framework, principle, case, counter-example, and glossary extractors), each writing its own file into `candidates/`. When parallel subagents aren't available, the same five prompts run serially with the same output.
 
 **Stage 1.5 — Triple Verification.** Every candidate unit faces three checks: V1 cross-corroboration (at least two independent passages back it), V2 predictive power (it answers a question the book never states outright), V3 uniqueness (it beats generic common sense). Survivors land in `verified.md`; culled units go to `rejected/` with a reason, so you can pull one back later. A light confirmation checkpoint here heads off rework before the expensive stages.
 
@@ -62,11 +62,11 @@ The engine is **RIA-TV++**: a seven-stage pipeline that reads the whole work, ex
 
 **Stage 3 — Zettelkasten Linking.** Map how skills depend on, contrast with, or combine with each other. Add a "Related skills" section to each one, generate `INDEX.md` with a reference graph, and consolidate the shared `GLOSSARY.md`.
 
-**Stage 4 — Pressure Testing.** Each skill gets 5–10 test prompts covering should-trigger, bait prompts (should-NOT-trigger), and boundary-ambiguous cases — with at least one bait prompt that should fire a sibling skill from the same book. Anything that fails goes back to Stage 2 for a full rebuild, not a cosmetic patch. Test format matches darwin-skill exactly.
+**Stage 4 — Pressure Testing.** Each skill gets 5-10 test prompts covering should-trigger, bait prompts (should-NOT-trigger), and boundary-ambiguous cases, with at least one bait prompt that should fire a sibling skill from the same book. Anything that fails goes back to Stage 2 for a full rebuild, not a cosmetic patch. Test format matches darwin-skill exactly.
 
 **Stage 5 — Delivery.** Write `DIGEST.md` for the reader who wants the essence without the whole book, then install the passing skills into the directory you choose so they can actually be invoked.
 
-Progress is reported between stages, and the run is resumable: `PIPELINE_STATE.md` records the current stage and per-skill status, so an interrupted run picks up where it left off.
+The skill reports progress between stages, and a run is resumable: `PIPELINE_STATE.md` records the current stage and per-skill status, so an interrupted run picks up where it left off.
 
 ---
 
@@ -92,7 +92,7 @@ books/<slug>/
 
 ---
 
-## Starter Corpus — legally free books to distill first
+## Starter Corpus: legally free books to distill first
 
 | Category | Book | Where | License status |
 |---|---|---|---|
@@ -110,7 +110,7 @@ books/<slug>/
 | Classics | The Autobiography of Benjamin Franklin | https://www.gutenberg.org/ebooks/148 | public domain |
 | Classics | The Elements of Style (Strunk, 1918) | https://www.gutenberg.org/ebooks/37134 | public domain |
 
-Recommended pilot: **Shape Up** — small, pure methodology, official free PDF.
+Recommended pilot: **Shape Up**, a small book of pure methodology with an official free PDF.
 
 ---
 
