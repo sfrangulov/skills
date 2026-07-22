@@ -7,7 +7,7 @@ Get the pipeline's output into the hands of the two people who actually need it:
 1. **The agent** — a skill must be installed into the host environment's skills directory, or it will never be invoked
 2. **The human reader** — a `DIGEST.md` reader-facing digest serves the "I don't want to read the whole book, just give me the essence" need
 
-Skip either of these and the previous five stages just produced a pile of files sitting in a repository.
+Skip either of these and every stage before this one just produced a pile of files sitting in a repository.
 
 ## Step 1 — Generate DIGEST.md (a reader-facing digest)
 

@@ -17,7 +17,7 @@ Break the methodology settled inside a book into a set of **atomic skills an age
 
 ## Core methodology: RIA-TV++
 
-A five-stage pipeline with parallel extraction, triple verification, and darwin-compatible testing. See `methodology/00-overview.md` for the full walkthrough.
+A seven-stage pipeline (Stages 0-5, plus a verification gate at 1.5) with parallel extraction, triple verification, and darwin-compatible testing. See `methodology/00-overview.md` for the full walkthrough.
 
 ```
 Stage 0: Whole-Work Comprehension (Adler pass) → BOOK_OVERVIEW.md

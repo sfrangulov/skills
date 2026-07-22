@@ -23,9 +23,9 @@ book-to-skills produces structured reuse instead. It turns the book's frameworks
 The engine is **RIA-TV++**: a seven-stage pipeline that reads the whole work, extracts candidate units in parallel, verifies each one three ways, builds it into a skill, links the skills together, pressure-tests them, and installs the survivors.
 
 ```
-┌───────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────────┐
 │  Source: a book / transcript / podcast / course / interview    │
-└───────────────────────────────┬───────────────────────────────┘
+└───────────────────────────────┬────────────────────────────────┘
                                  ▼
   Stage 0    Whole-Work Comprehension  (Adler four-pass read)
              └─▶ BOOK_OVERVIEW.md          ★ confirm the skeleton
@@ -122,7 +122,7 @@ Recommended pilot: **Shape Up**, a small book of pure methodology with an offici
 npx skills add sfrangulov/skills --skill book-to-skills
 ```
 
-### Manual installation
+### Manual Installation
 
 Clone the repo and copy the skill folder into your Claude Code skills directory:
 
