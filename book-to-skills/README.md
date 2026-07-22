@@ -27,7 +27,7 @@ The engine is **RIA-TV++**: a seven-stage pipeline that reads the whole work, ex
 │  Source: a book / transcript / podcast / course / interview    │
 └───────────────────────────────┬────────────────────────────────┘
                                  ▼
-  Stage 0    Whole-Work Comprehension  (Adler four-pass read)
+  Stage 0    Whole-Work Comprehension  (Adler pass)
              └─▶ BOOK_OVERVIEW.md          ★ confirm the skeleton
                                  ▼
   Stage 1    Parallel Extraction  (5 subagents, one message)
@@ -60,7 +60,7 @@ The engine is **RIA-TV++**: a seven-stage pipeline that reads the whole work, ex
 
 **Stage 2 — RIA++ Construction.** Each surviving unit becomes a skill with six sections: **R** (source quote), **I** (rebuilt in your own words), **A1** (the author's own cases), **A2** (the trigger that becomes the skill's `description`), **E** (1-2-3 steps), **B** (boundary and author blind spots).
 
-**Stage 3 — Zettelkasten Linking.** Map how skills depend on, contrast with, or combine with each other. Add a "Related skills" section to each one, generate `INDEX.md` with a reference graph, and consolidate the shared `GLOSSARY.md`.
+**Stage 3 — Zettelkasten Linking.** Map how skills depend on, contrast with, or compose with each other. Add a "Related skills" section to each one, generate `INDEX.md` with a reference graph, and consolidate the shared `GLOSSARY.md`.
 
 **Stage 4 — Pressure Testing.** Each skill gets 5-10 test prompts covering should-trigger, bait prompts (should-NOT-trigger), and boundary-ambiguous cases, with at least one bait prompt that should fire a sibling skill from the same book. Anything that fails goes back to Stage 2 for a full rebuild, not a cosmetic patch. Test format matches darwin-skill exactly.
 

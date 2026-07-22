@@ -7,7 +7,7 @@ description: Distill a book, long-video transcript, podcast, course, or intervie
 
 ## Mission
 
-Break the methodology settled inside a book into a set of **atomic skills an agent can invoke in real situations**, so the reader actually puts them to work.
+Break the methodology buried inside a book into a set of **atomic skills an agent can invoke in real situations**, so the reader actually puts them to work.
 
 > **Terminology**: throughout this document and everything under `methodology/` and `extractors/`, "book" is shorthand for any long-form source being distilled — a book, a long-video transcript, a podcast transcript, a course, an interview, a long article, a document set.
 
@@ -46,10 +46,12 @@ Before you start, you **must** confirm with the user:
 
 **Field mapping for non-book sources**: "chapter" fields such as `source_chapter` take a timestamp or part number for video, an episode number for podcasts, a lecture number for courses — anything that keeps the claim traceable.
 
+No source at hand? README.md's Starter Corpus lists legally free books to distill first.
+
 ## Output structure
 
 ```
-books/<book-slug>/
+books/<slug>/
 ├── PIPELINE_STATE.md          # pipeline state: current stage + per-skill progress (for checkpoint resume)
 ├── BOOK_OVERVIEW.md           # Stage 0 output: thesis / skeleton / terms / critique
 ├── verified.md                # Stage 1.5 output: units that passed Triple Verification + rationale
@@ -62,8 +64,8 @@ books/<book-slug>/
 │   ├── SKILL.md
 │   ├── test-prompts.json      # darwin-skill compatible format
 │   └── test-results.md        # Stage 4 pass rate + failure analysis
-├── <skill-slug-2>/
-│   └── ...
+└── <skill-slug-2>/
+    └── ...
 ```
 
 ## Execution flow (strict order)
@@ -122,7 +124,7 @@ See `methodology/04-stage2-ria-plus.md` for the details. Note: at this point A2'
 ### Stage 3 — Zettelkasten Linking
 
 Per `methodology/05-stage3-zettelkasten.md`:
-1. Find the reference relationships between skills (A depends on B / A contrasts with B / A combines with B).
+1. Find the reference relationships between skills (A depends on B / A contrasts with B / A composes with B).
 2. Add a "Related skills" section at the end of each SKILL.md, and backfill A2's "distinction from adjacent skills".
 3. Generate `INDEX.md` from `templates/INDEX.md.template` (with a mermaid reference graph).
 4. Consolidate `candidates/glossary.md` into `books/<slug>/GLOSSARY.md` — it's the shared dictionary for every skill, and shouldn't stay buried in the audit directory.

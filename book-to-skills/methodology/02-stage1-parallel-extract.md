@@ -1,4 +1,4 @@
-# Stage 1 — 5 Subagents Extracting in Parallel
+# Stage 1 — Parallel Extraction (5 Subagents at Once)
 
 ## Goal
 

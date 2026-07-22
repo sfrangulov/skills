@@ -10,17 +10,17 @@ This is the quality gate that separates book-to-skills from a plain book-summary
 
 ### V1 — Cross-corroboration
 
-**Question**: is this unit backed up in **at least 2 independent contexts** in the book?
+**Question**: is this unit backed up in **at least 2 independent passages** in the book?
 
 - What "independent" means: not the same case restated in different words, but two different stories, different chapters, or different subjects making the same point
-- **Pass**: Buffett's shareholder letters return to "circle of competence" across investment decisions, manager selection, and general career advice to shareholders — three independent contexts → pass
+- **Pass**: Buffett's shareholder letters return to "circle of competence" across investment decisions, manager selection, and general career advice to shareholders — three independent passages → pass
 - **Fail**: a nice-sounding sentence that appears once, in one chapter, with no independent corroboration elsewhere in the book → downgrade to a quotable example
 
 **Why**: something that recurs across multiple contexts is the stable methodology the author actually means to convey — not a phrase they reached for once.
 
 ### V2 — Predictive power
 
-**Question**: can this unit be used to derive the answer to a question the book never directly discusses?
+**Question**: can this unit be used to derive the answer to a question the book never states outright?
 
 - Design a scenario the book doesn't directly address
 - Try applying the methodology to analyze it

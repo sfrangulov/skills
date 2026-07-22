@@ -28,7 +28,7 @@ Make the relationships between atomic skills explicit, turning them into a navig
        relation: contrasts-with
    ```
 4. Append a "Related skills" section to the end of each `SKILL.md`, explaining the relationships in plain prose.
-5. **Backfill A2**: once the link relationships are settled, go back to each skill's A2 section and turn Stage 2's "distinction from adjacent skills" first draft into the final version (updating the frontmatter `description` field in step).
+5. **Backfill A2**: once the link relationships are settled, go back to each skill's A2 section and turn Stage 2's "distinction from adjacent skills" first draft into the final version (updating the frontmatter `description` field in the same step).
 6. Generate `books/<slug>/INDEX.md` (template `templates/INDEX.md.template`).
 7. Consolidate `candidates/glossary.md` into `books/<slug>/GLOSSARY.md` — it's the shared dictionary for every skill, so it belongs at the root of the output where it's visible, not buried in the audit directory; link it from `INDEX.md`.
 

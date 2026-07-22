@@ -68,7 +68,7 @@ Counter-examples are the core material for Stage 2's **B (Boundary)** section. W
   tags: [counter-example, self-governance, retaliation]
 ```
 
-Note the added `summary` field: it's not in every extractor's minimal schema by default, but every candidate unit — regardless of which extractor produced it — needs a short own-words distillation alongside its more detailed type-specific fields, so keep it here too.
+Note the added `summary` field: it isn't part of this extractor's type-specific schema, but every candidate unit — regardless of which extractor produced it — needs a short own-words distillation alongside its more detailed type-specific fields, so keep it here too.
 
 ## Self-check
 
