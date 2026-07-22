@@ -1,0 +1,52 @@
+{
+  "skill": "{{skill-slug}}",
+  "version": "0.1.0",
+  "source_book": "{{BOOK_TITLE}} — {{AUTHOR}}",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "{{typical user phrasing 1 — positive scenario}}",
+      "expected_behavior": "Should invoke {{skill-slug}} and {{expected concrete action}}",
+      "notes": "{{why this is a positive scenario}}"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "{{typical user phrasing 2}}",
+      "expected_behavior": "...",
+      "notes": "..."
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "{{typical user phrasing 3}}",
+      "expected_behavior": "...",
+      "notes": "..."
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "{{bait prompt 1 — looks related but shouldn't invoke}}",
+      "expected_behavior": "Should not invoke this skill, because {{reason}}",
+      "notes": "Bait: {{what kind of bait this is}}"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "{{bait prompt 2 — a scenario that should trigger a different skill from the same book}}",
+      "expected_behavior": "Should not invoke this skill — should invoke {{sibling-skill-slug}} instead",
+      "notes": "Cross-skill confusion bait (at least 1 required, non-negotiable): prevents skills from the same book competing for the same invocation"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "{{boundary-ambiguous scenario}}",
+      "expected_behavior": "{{the reasonable expected judgment — may be to invoke or not, but explain why}}",
+      "notes": "Boundary: {{why this is a boundary case}}"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "At least 3 should_trigger cases + 2 should_not_trigger cases + 1 edge_case case. Every should_not_trigger case must pass (zero tolerance for a bait miss), and at least one of them must be a scenario belonging to a sibling skill from the same book (the cross-skill confusion test)."
+}

@@ -1,0 +1,88 @@
+# {{BOOK_TITLE}} — Skill Index
+
+> book-to-skills distilled this book into **{{N}}** skills.
+> Processed on: {{DATE}}
+
+## About this book
+
+- **Author**: {{AUTHOR}}
+- **Publication year**: {{YEAR}}
+- **One-sentence thesis**: {{ONE_LINE_THEME}}
+- **Whole-work comprehension**: see [BOOK_OVERVIEW.md](./BOOK_OVERVIEW.md)
+- **Reader-facing digest** (skip the whole book, read this instead): [DIGEST.md](./DIGEST.md)
+- **Glossary**: [GLOSSARY.md](./GLOSSARY.md)
+
+---
+
+## Skill list (grouped by topic)
+
+### {{topic 1}}
+
+- [`{{skill-slug-1}}`](./{{skill-slug-1}}/SKILL.md) — {{one-line description}}
+- [`{{skill-slug-2}}`](./{{skill-slug-2}}/SKILL.md) — {{one-line description}}
+
+### {{topic 2}}
+
+- [`{{skill-slug-3}}`](./{{skill-slug-3}}/SKILL.md) — {{one-line description}}
+
+---
+
+## Reference graph
+
+```mermaid
+graph LR
+    A[skill-a] -->|depends-on| B[skill-b]
+    A -.->|contrasts-with| C[skill-c]
+    B ===>|composes-with| D[skill-d]
+```
+
+Legend:
+- `-->`  depends-on
+- `-.->` contrasts-with
+- `===>` composes-with
+
+---
+
+## Recommended reading order
+
+(start from the dependency graph's leaf nodes and work up)
+
+1. **{{skill-slug-a}}** — most foundational, no prerequisites
+2. **{{skill-slug-b}}** — depends on skill-slug-a
+3. **{{skill-slug-c}}** — depends on skill-slug-a, complements skill-slug-b
+...
+
+---
+
+## Install & use
+
+This directory is a build artifact — the host won't load a skill from here. To make it actually invocable by an agent, copy the skill directory into the host's skills directory:
+
+```bash
+# User-level (usable from every project)
+cp -r {{skill-slug-1}} ~/.claude/skills/
+
+# Or project-level
+cp -r {{skill-slug-1}} <project>/.claude/skills/    # Claude Code
+cp -r {{skill-slug-1}} <project>/.cursor/skills/    # Cursor
+```
+
+---
+
+## Feeding into darwin-skill
+
+Every skill ships with a `test-prompts.json` (darwin-skill compatible format), so you can plug straight into automatic evolution:
+
+```
+darwin evolve books/{{book-slug}}/
+```
+
+Optional: <https://github.com/alchaincyf/darwin-skill>
+
+---
+
+## Audit trail
+
+- Candidate unit pool: [candidates/](./candidates/)
+- Culled candidates (with reasons): [rejected/](./rejected/)
+- BOOK_OVERVIEW: [BOOK_OVERVIEW.md](./BOOK_OVERVIEW.md)

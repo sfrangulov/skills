@@ -1,0 +1,121 @@
+---
+name: {{skill-slug}}
+description: |
+  {{when to invoke it + when not to + key trigger signals, ≤300 words}}
+source_book: {{BOOK_TITLE}} — {{AUTHOR}}
+source_chapter: {{CHAPTER}}
+tags: [{{tag1}}, {{tag2}}]
+related_skills: []    # filled in at Stage 3
+---
+
+<!--
+  Fill-in notes (delete this comment block once the final skill is generated):
+  - description: condensed from the A2 section, ≤300 words, must state "when to invoke + when not to + key trigger signals."
+    Good example: "When the user is wrestling with a decision, has listed the upsides but still can't get clear, or asks 'how do I make X work.' Not applicable to: pure information lookup, everyday trivial choices."
+    Phrase trigger words the way the user would actually say them, not the source's academic vocabulary — that's what drives trigger accuracy.
+  - source_chapter: a chapter/page for a book; a timestamp/part number for video; an episode number for a podcast.
+  - source_book / tags / related_skills are extension fields for audit and linking — the host only reads name + description when it loads the skill.
+-->
+
+# {{Skill Title}}
+
+## R — Reading (source quote)
+
+> {{source quote, ≤100 words, must cite chapter/page/timestamp}}
+>
+> — {{AUTHOR}}, {{CHAPTER}}
+
+---
+
+## I — Interpretation (own-words rebuild)
+
+{{ Rebuild the methodology's core skeleton in your own words, 5-15 lines.
+   Check: after reading this section, could someone who never read the source understand what this methodology does? If not, rewrite.
+   Forbidden: lifting the source's sentences verbatim, piling on rhetoric. }}
+
+---
+
+## A1 — Past Application (author's own cases)
+
+### Case 1: {{case name}}
+- **Problem**: {{what the author ran into}}
+- **How the methodology was applied**: {{how the author reasoned through it using this methodology}}
+- **Conclusion**: {{what it produced}}
+- **Result**: {{what actually happened}}
+
+### Case 2 (if any)
+...
+
+---
+
+## A2 — Future Trigger ★
+
+### What situation will the user be in when this problem comes up?
+
+1. {{scenario 1 — concrete enough to be identifiable}}
+2. {{scenario 2}}
+3. {{scenario 3}}
+
+### Language signals (activate when the user's words include these)
+
+- "{{typical phrasing 1}}"
+- "{{typical phrasing 2}}"
+- "{{typical phrasing 3}}"
+
+### Distinction from adjacent skills
+
+- vs. `{{related-skill-a}}`: {{ ... }}
+- vs. `{{related-skill-b}}`: {{ ... }}
+
+---
+
+## E — Execution (executable steps)
+
+Once this skill activates, the agent should follow these steps:
+
+1. **{{step 1}}**
+   - Completion criterion: {{how to tell this step is done}}
+
+2. **{{step 2}}**
+   - Completion criterion: {{ ... }}
+   - Stop condition: if {{X}}, skip to step {{N}}
+
+3. **{{step 3}}**
+   - Completion criterion: {{ ... }}
+
+---
+
+## B — Boundary
+
+### Don't use this skill when
+
+- {{counter-scenario 1 — why it doesn't apply}}
+- {{counter-scenario 2}}
+
+### Failure modes the author warned about in the source
+
+- {{ the matching counter-example from counter-example-extractor }}
+
+### The author's blind spots / era-bound limits
+
+- {{ carried over from the Stage 0 critical pass }}
+
+### Adjacent methodologies easy to confuse this one with
+
+- {{ ... }}
+
+---
+
+## Related skills (filled in at Stage 3)
+
+- depends-on: {{}}
+- contrasts-with: {{}}
+- composes-with: {{}}
+
+---
+
+## Audit info
+
+- **Verification passed**: V1 ✓ / V2 ✓ / V3 ✓
+- **Test pass rate**: {{%}} (see test-prompts.json for detail)
+- **Distillation date**: {{DATE}}

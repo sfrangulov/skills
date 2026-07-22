@@ -1,0 +1,102 @@
+# {{BOOK_TITLE}} — Whole-Work Comprehension (Stage 0 output)
+
+> This document is Stage 0's output for the book-to-skills pipeline — every extractor and skill downstream uses it as global context.
+
+## Basic info
+
+- **Title**: {{BOOK_TITLE}}
+- **Author**: {{AUTHOR}}  <!-- for video, the creator/presenter; for podcast, the host -->
+- **Publication / release date**: {{YEAR}}
+- **Content type**: {{ book / video transcript / podcast / course / interview / long article }}
+- **Source file**: {{SOURCE_FILE}}
+- **Processed on**: {{DATE}}
+
+---
+
+## 1. Structural
+
+### Kind
+{{ methodology / biography / philosophy / practical manual / ... }}
+
+### One-sentence thesis
+{{ State what this book is about in one sentence — it has to genuinely be one sentence }}
+
+### Skeleton (top-level arguments and how they relate)
+
+1. {{argument 1}}
+2. {{argument 2}}
+3. {{argument 3}}
+...
+
+**How the arguments relate**: {{ parallel / progressive / contrasting / rebutting / building layer by layer }}
+
+### The core problem the author is trying to solve
+{{ What question did the author write this book to answer? }}
+
+---
+
+## 2. Interpretive
+
+### Key terms (the author's own usage)
+
+| Term | Author's definition | How it differs from common usage |
+|---|---|---|
+| {{term}} | {{author's definition}} | {{what's different}} |
+
+### Core propositions (in your own words)
+
+1. {{proposition 1}}
+2. {{proposition 2}}
+...
+
+### Argument chain
+{{ What evidence / argument path does the author use to string these propositions together? }}
+
+---
+
+## 3. Critical ★
+
+### The author's era-bound limits
+- {{ ... }}
+
+### The author's positional blind spots
+- {{ ... }}
+
+### Unproven assumptions
+- {{ ... }}
+
+### The strongest counter-argument
+{{ If someone set out to refute this book, what would their best argument be? }}
+
+> **The critique above becomes the direct source for every downstream skill's Boundary (B) field**
+
+---
+
+## 4. Applicability
+
+### What can become a skill
+- [ ] {{candidate topic 1}}
+- [ ] {{candidate topic 2}}
+...
+
+### What shouldn't become a skill
+- {{ This content stays as an example / citation, but doesn't become a standalone skill }}
+
+### Estimated skill count
+**Roughly {{N}}** (the final count is decided by Stage 1.5's Triple Verification — this is only a rough estimate)
+
+### Priority ranking (by "how much this empowers an ordinary person")
+1. {{top priority}}
+2. {{...}}
+
+---
+
+## ✅ Quality gate
+
+- [ ] The thesis can be stated in one sentence
+- [ ] The skeleton lists 3–7 top-level arguments
+- [ ] The key-term glossary has ≥5 entries
+- [ ] The critical pass lists ≥3 of the author's limits
+- [ ] `BOOK_OVERVIEW.md` has been shown to the user and confirmed
+
+**User confirmed on**: {{ }}

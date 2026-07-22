@@ -1,0 +1,73 @@
+# {{BOOK_TITLE}} — Reader-Facing Digest
+
+> book-to-skills distilled this digest — it presents only the methodologies that **passed Triple Verification**. Not a book summary; the padding has been filtered out.
+> To go deeper on a methodology, follow the skill link at the end of its section; for the full picture, read [INDEX.md](./INDEX.md).
+> Author: {{AUTHOR}} | {{YEAR}} | roughly {{WORD_COUNT}} words, about {{N}} minutes to read
+
+## What this book is about
+
+{{ 2-3 paragraphs: the one-sentence thesis, expanded. What problem the author set out to solve, what answer they gave, and why that answer is worth hearing.
+   Draws on BOOK_OVERVIEW's structural section, but written as flowing prose for a reader — not fields filled in. }}
+
+---
+
+## {{Top-level argument 1 — organize sections around the book's own skeleton}}
+
+{{ Intro to this section: what question do these methodologies jointly answer? }}
+
+### {{Methodology 1 title}}
+
+**What problem it solves**: {{ ... }}
+
+**Core logic**: {{ 3-6 lines, in your own words, explaining how this methodology works and why it's effective }}
+
+**How it's used in the source**: {{ the single most representative case, walking through problem → how it was applied → result }}
+
+> {{ optional: one memorable original line, ≤100 words, cite the source }}
+
+**When it stops working**: {{ 1-2 lines of boundary }}
+
+→ Go deeper: [`{{skill-slug}}`](./{{skill-slug}}/SKILL.md)
+
+### {{Methodology 2 title}}
+
+{{ same structure as above }}
+
+---
+
+## {{Top-level argument 2}}
+
+{{ ... repeat the pattern above, covering every core methodology ... }}
+
+---
+
+## Traps and counter-examples
+
+{{ From the counter-examples pool: failure modes the author warns about.
+   Each entry explains: what the trap is → why people fall for it (the mechanism) → the warning sign.
+   3-6 entries, pick the sharpest ones. }}
+
+---
+
+## The author's limits (the discount to apply when reading this book)
+
+{{ From the Stage 0 critical pass: era-bound limits / positional blind spots / unproven assumptions / the strongest counter-argument.
+   2-4 entries. A digest that only reports the good news is marketing copy, not distillation. }}
+
+---
+
+## Key terms at a glance
+
+| Term | The author's usage | How it differs from common sense |
+|---|---|---|
+| {{term}} | {{definition}} | {{distinction}} |
+
+Full glossary at [GLOSSARY.md](./GLOSSARY.md).
+
+---
+
+## If you take away only three sentences
+
+1. {{ the single most important one }}
+2. {{ ... }}
+3. {{ ... }}
